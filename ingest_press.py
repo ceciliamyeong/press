@@ -46,7 +46,7 @@ def parse_with_claude(subject, body, attachments_text):
     combined = f"제목: {subject}\n\n본문:\n{body}\n\n첨부파일 내용:\n{attachments_text}"
 
     msg = client.messages.create(
-        model="claude-opus-4-5",
+        model="claude-haiku-4-5-20251001",
         max_tokens=1000,
         messages=[{
             "role": "user",
@@ -80,4 +80,32 @@ raw_row = {
     "sender": payload["from"],
     "subject": payload["subject"],
     "body_plain": payload.get("bodyPlain", ""),
-    "
+    "raw_attachments": processed_atts
+}
+
+with httpx.Client() as client:
+    res = client.post(
+        f"{SUPABASE_URL}/rest/v1/press_raw",
+        headers={**headers, "Prefer": "return=representation"},
+        json=raw_row
+    )
+    if res.status_code not in (200, 201):
+        if "duplicate" in res.text.lower():
+            print("Skipped: duplicate message_id")
+            exit(0)
+        raise Exception(f"Supabase raw insert failed: {res.text}")
+
+    raw_id = res.json()[0]["id"]
+    print(f"Raw saved: {raw_id}")
+
+# 2. Claude 파싱 + structured 저장
+parsed = parse_with_claude(payload["subject"], payload.get("bodyPlain", ""), atts_text)
+parsed["raw_id"] = raw_id
+
+with httpx.Client() as client:
+    res = client.post(
+        f"{SUPABASE_URL}/rest/v1/press_structured",
+        headers=headers,
+        json=parsed
+    )
+    print(f"Structured saved: {res.status_code}")
