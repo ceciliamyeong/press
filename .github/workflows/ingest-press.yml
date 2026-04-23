@@ -16,7 +16,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r press/requirements.txt
+        run: pip install pdfminer.six python-docx httpx anthropic
 
       - name: Run ingest script
         env:
