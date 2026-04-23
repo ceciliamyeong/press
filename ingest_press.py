@@ -75,7 +75,7 @@ def parse_with_claude(subject, body, attachments_text):
     raw_text = raw_text.strip()
     if not raw_text:
         raise Exception("Claude returned empty response")
-    return json.loads(raw_text))
+    return json.loads(raw_text)
 
 # 메인 실행
 processed_atts = process_attachments(payload.get("attachments", []))
