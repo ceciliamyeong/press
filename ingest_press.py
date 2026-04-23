@@ -67,7 +67,15 @@ def parse_with_claude(subject, body, attachments_text):
 {combined[:8000]}"""
         }]
     )
-    return json.loads(msg.content[0].text)
+    raw_text = msg.content[0].text.strip()
+    if raw_text.startswith("```"):
+        raw_text = raw_text.split("```")[1]
+        if raw_text.startswith("json"):
+            raw_text = raw_text[4:]
+    raw_text = raw_text.strip()
+    if not raw_text:
+        raise Exception("Claude returned empty response")
+    return json.loads(raw_text))
 
 # 메인 실행
 processed_atts = process_attachments(payload.get("attachments", []))
