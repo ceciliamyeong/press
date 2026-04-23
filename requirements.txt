@@ -1,0 +1,4 @@
+pdfminer.six
+python-docx
+httpx
+anthropic
