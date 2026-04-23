@@ -1,6 +1,7 @@
 import base64, io, json, os
 import httpx
 import anthropic
+import time
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
@@ -45,12 +46,14 @@ def parse_with_claude(subject, body, attachments_text):
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     combined = f"제목: {subject}\n\n본문:\n{body}\n\n첨부파일 내용:\n{attachments_text}"
 
-    msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1000,
-        messages=[{
-            "role": "user",
-            "content": f"""다음 보도자료를 분석해서 JSON으로만 응답하세요. 다른 텍스트 없이 JSON만.
+    for attempt in range(3):
+        try:
+            msg = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=1000,
+                messages=[{
+                    "role": "user",
+                    "content": f"""다음 보도자료를 분석해서 JSON으로만 응답하세요. 다른 텍스트 없이 JSON만.
 
 {{
   "company": "발신 기업/기관명",
@@ -65,17 +68,24 @@ def parse_with_claude(subject, body, attachments_text):
 
 보도자료:
 {combined[:8000]}"""
-        }]
-    )
-    raw_text = msg.content[0].text.strip()
-    if raw_text.startswith("```"):
-        raw_text = raw_text.split("```")[1]
-        if raw_text.startswith("json"):
-            raw_text = raw_text[4:]
-    raw_text = raw_text.strip()
-    if not raw_text:
-        raise Exception("Claude returned empty response")
-    return json.loads(raw_text)
+                }]
+            )
+            raw_text = msg.content[0].text.strip()
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("```")[1]
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:]
+            raw_text = raw_text.strip()
+            if not raw_text:
+                raise Exception("Claude returned empty response")
+            return json.loads(raw_text)
+        except Exception as e:
+            if "rate_limit" in str(e) and attempt < 2:
+                wait = (attempt + 1) * 30
+                print(f"Rate limit hit, waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
 # 메인 실행
 processed_atts = process_attachments(payload.get("attachments", []))
