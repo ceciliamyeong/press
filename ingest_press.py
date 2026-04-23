@@ -1,6 +1,6 @@
 import base64, io, json, os
 import httpx
-import google.generativeai as genai
+from google import genai
 import time
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
@@ -43,13 +43,14 @@ def process_attachments(attachments):
     return results
 
 def parse_with_gemini(subject, body, attachments_text):
-    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
     combined = f"제목: {subject}\n\n본문:\n{body}\n\n첨부파일 내용:\n{attachments_text}"
 
     for attempt in range(3):
         try:
-            response = model.generate_content(f"""다음 보도자료를 분석해서 JSON으로만 응답하세요. 다른 텍스트 없이 JSON만.
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=f"""다음 보도자료를 분석해서 JSON으로만 응답하세요. 다른 텍스트 없이 JSON만.
 
 {{
   "company": "발신 기업/기관명",
@@ -63,8 +64,8 @@ def parse_with_gemini(subject, body, attachments_text):
 }}
 
 보도자료:
-{combined[:8000]}""")
-
+{combined[:8000]}"""
+            )
             raw_text = response.text.strip()
             if raw_text.startswith("```"):
                 raw_text = raw_text.split("```")[1]
@@ -81,7 +82,7 @@ def parse_with_gemini(subject, body, attachments_text):
                 time.sleep(wait)
             else:
                 raise
-
+                
 # 메인 실행
 processed_atts = process_attachments(payload.get("attachments", []))
 atts_text = "\n\n".join(a["extractedText"] for a in processed_atts)
