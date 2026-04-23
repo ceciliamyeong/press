@@ -1,4 +1,4 @@
 pdfminer.six
 python-docx
 httpx
-google-generativeai
+google-genai
