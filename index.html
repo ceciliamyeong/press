@@ -304,11 +304,6 @@ function filtered() {
       (!cat || d.category === cat) &&
       (!lang || d.language === lang) &&
       (!score || (d.importance_score||0) >= score);
-  }).sort((a, b) => {
-    if (sortKey === 'date') return sortDir * (new Date(b.press_raw?.received_at||b.parsed_at) - new Date(a.press_raw?.received_at||a.parsed_at));
-    if (sortKey === 'company') return sortDir * (a.company||'').localeCompare(b.company||'');
-    if (sortKey === 'score') return sortDir * ((b.importance_score||0) - (a.importance_score||0));
-    return 0;
   });
 }
 
