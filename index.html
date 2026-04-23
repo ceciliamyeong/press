@@ -80,9 +80,22 @@ select {
 .stat { font-size: 12px; color: #888; }
 .stat strong { color: #1a1a1a; font-weight: 500; }
 
-.content { padding: 0 24px 40px; }
+.content { padding: 0 0 40px; }
 
-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 1px; }
+#table-view {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 24px;
+}
+
+table { 
+  width: 100%; 
+  min-width: 700px;
+  border-collapse: collapse; 
+  font-size: 13px; 
+  margin-top: 1px; 
+} 
+  
 thead th {
   text-align: left;
   padding: 10px 10px;
@@ -93,7 +106,8 @@ thead th {
   cursor: pointer;
   user-select: none;
   background: #fafaf9;
-}
+} 
+  
 thead th:hover { color: #1a1a1a; }
 tbody tr { border-bottom: 1px solid #f0f0ee; cursor: pointer; }
 tbody tr:hover { background: #f5f5f3; }
