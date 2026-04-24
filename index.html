@@ -134,6 +134,7 @@ td { padding: 10px 10px; vertical-align: middle; overflow: hidden; text-overflow
 .cat-regulation { background: #fee2e2; color: #991b1b; }
 .cat-product { background: #ede9fe; color: #5b21b6; }
 .cat-event { background: #fce7f3; color: #9d174d; }
+.cat-finance { background: #e0f2fe; color: #0369a1; }
 .cat-other { background: #f3f4f6; color: #374151; }
 
 .token-tag {
@@ -161,41 +162,11 @@ td { padding: 10px 10px; vertical-align: middle; overflow: hidden; text-overflow
   flex-direction: column;
   gap: 14px;
 }
-
-/* 요약 */
 .expand-summary { font-size: 13px; color: #333; line-height: 1.7; }
-
-/* 메타 */
 .expand-meta { display: flex; gap: 16px; flex-wrap: wrap; }
 .expand-meta span { font-size: 12px; color: #888; }
 .expand-meta span strong { color: #333; font-weight: 500; }
-
-/* 섹션 구분선 */
-.expand-divider {
-  border: none;
-  border-top: 1px solid #e5e5e3;
-}
-
-/* 원문 / 첨부파일 탭 */
-.expand-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid #e5e5e3;
-}
-.expand-tab {
-  padding: 5px 12px;
-  font-size: 12px;
-  color: #888;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  user-select: none;
-}
-.expand-tab.active { color: #1a1a1a; font-weight: 500; border-bottom-color: #3b82f6; }
-.expand-tab-panel { display: none; }
-.expand-tab-panel.active { display: block; }
-
-/* 원문 텍스트 박스 */
+.expand-divider { border: none; border-top: 1px solid #e5e5e3; }
 .raw-body {
   font-size: 12px;
   color: #444;
@@ -209,45 +180,8 @@ td { padding: 10px 10px; vertical-align: middle; overflow: hidden; text-overflow
   max-height: 320px;
   overflow-y: auto;
 }
-
-/* 첨부파일 목록 */
-.attach-list { display: flex; flex-direction: column; gap: 10px; }
-.attach-item {
-  border: 1px solid #e5e5e3;
-  border-radius: 6px;
-  overflow: hidden;
-}
-.attach-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #f5f5f3;
-  cursor: pointer;
-  user-select: none;
-  font-size: 12px;
-  font-weight: 500;
-  color: #333;
-}
-.attach-header:hover { background: #efefed; }
-.attach-icon { font-size: 14px; }
-.attach-toggle { margin-left: auto; color: #aaa; font-size: 11px; }
-.attach-body {
-  display: none;
-  font-size: 12px;
-  color: #444;
-  line-height: 1.75;
-  white-space: pre-wrap;
-  word-break: break-word;
-  padding: 10px 14px;
-  max-height: 260px;
-  overflow-y: auto;
-  border-top: 1px solid #e5e5e3;
-}
-.attach-body.open { display: block; }
 .no-content { font-size: 12px; color: #aaa; padding: 4px 0; }
 
-/* 카드 뷰 */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -294,6 +228,7 @@ td { padding: 10px 10px; vertical-align: middle; overflow: hidden; text-overflow
     <option value="regulation">규제</option>
     <option value="product">제품</option>
     <option value="event">이벤트</option>
+    <option value="finance">금융</option>
     <option value="other">기타</option>
   </select>
   <select id="lang-filter" onchange="render()">
@@ -346,7 +281,8 @@ const SUPABASE_KEY = 'sb_publishable_RQGUYA-vTnhk3uT1kr8zlA_zwlDbo8i';
 
 const CAT_LABELS = {
   listing: '상장', partnership: '파트너십', funding: '펀딩',
-  regulation: '규제', product: '제품', event: '이벤트', other: '기타'
+  regulation: '규제', product: '제품', event: '이벤트',
+  finance: '금융', other: '기타'
 };
 
 let allData = [];
@@ -354,7 +290,6 @@ let sortKey = 'date';
 let sortDir = -1;
 let currentView = 'table';
 let expandedId = null;
-
 
 async function loadData() {
   try {
@@ -379,6 +314,11 @@ function showError() {
     `<tr><td colspan="6" class="empty">데이터를 불러올 수 없습니다</td></tr>`;
 }
 
+function getDate(d) {
+  // 항상 press_raw.received_at 기준으로 정렬
+  return new Date(d.press_raw?.received_at || 0);
+}
+
 function filtered() {
   const q = document.getElementById('search').value.toLowerCase();
   const cat = document.getElementById('cat-filter').value;
@@ -387,14 +327,15 @@ function filtered() {
   return allData.filter(d => {
     const matchQ = !q || (d.title||'').toLowerCase().includes(q) ||
       (d.company||'').toLowerCase().includes(q) ||
+      (d.press_raw?.subject||'').toLowerCase().includes(q) ||
       (d.keywords||[]).join(' ').toLowerCase().includes(q);
     return matchQ &&
       (!cat || d.category === cat) &&
       (!lang || d.language === lang) &&
       (!score || (d.importance_score||0) >= score);
   }).sort((a, b) => {
-    if (sortKey === 'date') return sortDir * (new Date(b.press_raw?.received_at||b.parsed_at) - new Date(a.press_raw?.received_at||a.parsed_at));
-    if (sortKey === 'company') return sortDir * (a.company||'').localeCompare(b.company||'');
+    if (sortKey === 'date') return sortDir * (getDate(b) - getDate(a));
+    if (sortKey === 'company') return sortDir * (a.company||a.press_raw?.sender||'').localeCompare(b.company||b.press_raw?.sender||'');
     if (sortKey === 'score') return sortDir * ((b.importance_score||0) - (a.importance_score||0));
     return 0;
   });
@@ -426,12 +367,11 @@ function updateStats(rows) {
   const weekAgo = new Date(now - 7*24*60*60*1000);
   document.getElementById('total-count').textContent = rows.length;
   document.getElementById('today-count').textContent =
-    rows.filter(d => new Date(d.press_raw?.received_at||d.parsed_at).toDateString()===todayStr).length;
+    rows.filter(d => getDate(d).toDateString()===todayStr).length;
   document.getElementById('week-count').textContent =
-    rows.filter(d => new Date(d.press_raw?.received_at||d.parsed_at)>=weekAgo).length;
+    rows.filter(d => getDate(d)>=weekAgo).length;
 }
 
-// ── 확장 패널 HTML 생성 ──────────────────────────────────
 function expandHTML(d) {
   const raw = d.press_raw || {};
   const hasBody = !!(raw.body_plain && raw.body_plain.trim());
@@ -461,7 +401,6 @@ function escHtml(str) {
     .replace(/"/g,'&quot;');
 }
 
-// ── 렌더 ─────────────────────────────────────────────────
 function render() {
   const rows = filtered();
   updateStats(rows);
@@ -479,7 +418,7 @@ function renderTable(rows) {
     const isExp = expandedId === d.id;
     return `
       <tr onclick="toggleExpand('${d.id}')" class="${isExp?'expanded':''}">
-        <td class="col-date" style="color:#888;font-size:12px">${formatDate(d.press_raw?.received_at||d.parsed_at)}</td>
+        <td class="col-date" style="color:#888;font-size:12px">${formatDate(d.press_raw?.received_at)}</td>
         <td class="col-company" style="font-weight:500">${escHtml(d.company||'-')}</td>
         <td class="col-title">${escHtml(d.title||d.press_raw?.subject||'-')}</td>
         <td class="col-cat">${catBadge(d.category)}</td>
@@ -497,7 +436,7 @@ function renderCards(rows) {
     <div class="card" onclick="toggleExpand('${d.id}')">
       <div class="card-header">
         <span class="card-company">${escHtml(d.company||'-')}</span>
-        <span class="card-date">${formatDate(d.press_raw?.received_at||d.parsed_at)}</span>
+        <span class="card-date">${formatDate(d.press_raw?.received_at)}</span>
       </div>
       <div class="card-title">${escHtml(d.title||d.press_raw?.subject||'-')}</div>
       <div class="card-summary">${escHtml(d.summary_ko||'-')}</div>
