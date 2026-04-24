@@ -84,7 +84,6 @@ def parse_with_gemini(subject, body, attachments_text):
                 raise
                 
 # 메인 실행
-raw_only = payload.get("rawOnly", False)
 processed_atts = process_attachments(payload.get("attachments", []))
 atts_text = "\n\n".join(a["extractedText"] for a in processed_atts)
 
@@ -110,13 +109,12 @@ with httpx.Client() as client:
             exit(0)
         raise Exception(f"Supabase raw insert failed: {res.text}")
 
-    raw_id = res.json()[0]["id"]
+    rows = res.json()
+    if not rows:
+        print("Skipped: duplicate message_id")
+        exit(0)
+    raw_id = rows[0]["id"]
     print(f"Raw saved: {raw_id}")
-
-# rawOnly 플래그 있으면 파싱 스킵 (백필용)
-if raw_only:
-    print(f"Raw only mode — 파싱 스킵 ({payload['subject']})")
-    exit(0)
 
 # 2. Gemini 파싱 + structured 저장
 parsed = parse_with_gemini(payload["subject"], payload.get("bodyPlain", ""), atts_text)
