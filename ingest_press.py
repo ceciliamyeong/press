@@ -56,7 +56,7 @@ def parse_with_gemini(subject, body, attachments_text):
   "company": "발신 기업/기관명",
   "title": "정제된 한국어 제목",
   "summary_ko": "한국어 요약 3~5줄",
-  "category": "listing|partnership|funding|regulation|product|event|other 중 하나",
+  "category": "listing|partnership|funding|regulation|product|event|finance|other 중 하나 (증권사·은행·금융기관 발신이면 finance)",
   "tokens": ["관련 토큰 심볼 배열, 없으면 []"],
   "keywords": ["핵심 키워드 5개 이내"],
   "language": "ko|en|mixed 중 하나",
