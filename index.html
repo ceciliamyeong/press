@@ -354,8 +354,7 @@ let sortKey = 'date';
 let sortDir = -1;
 let currentView = 'table';
 let expandedId = null;
-// 탭 상태: { [id]: 'body' | 'attachments' }
-const tabState = {};
+
 
 async function loadData() {
   try {
@@ -367,8 +366,9 @@ async function loadData() {
     if (Array.isArray(data)) {
       allData = data.map(raw => ({
         ...raw.press_structured?.[0],
-        press_raw: raw
-      })).filter(d => d.id);
+        press_raw: raw,
+        id: raw.press_structured?.[0]?.id || raw.id
+      })).filter(d => d.press_raw?.id);
       render();
     } else { showError(); }
   } catch(e) { showError(); }
@@ -433,67 +433,22 @@ function updateStats(rows) {
 
 // ── 확장 패널 HTML 생성 ──────────────────────────────────
 function expandHTML(d) {
-  const id = d.id;
-  const tab = tabState[id] || 'body';
   const raw = d.press_raw || {};
-  const attachments = Array.isArray(raw.raw_attachments) ? raw.raw_attachments : [];
   const hasBody = !!(raw.body_plain && raw.body_plain.trim());
-  const hasAtts = attachments.length > 0;
-
-  // 원문 탭 패널
-  const bodyPanel = `
-    <div class="expand-tab-panel ${tab==='body'?'active':''}" id="tp-body-${id}">
-      ${hasBody
-        ? `<div class="raw-body">${escHtml(raw.body_plain)}</div>`
-        : `<p class="no-content">원문 텍스트가 없습니다.</p>`}
-    </div>`;
-
-  // 첨부파일 탭 패널
-  const attsPanel = `
-    <div class="expand-tab-panel ${tab==='attachments'?'active':''}" id="tp-att-${id}">
-      ${hasAtts
-        ? `<div class="attach-list">
-            ${attachments.map((a, i) => {
-              const ext = (a.filename||'').split('.').pop().toLowerCase();
-              const icon = ext==='pdf' ? '📄' : ext==='docx'||ext==='doc' ? '📝' : '📎';
-              const hasText = !!(a.extractedText && a.extractedText.trim());
-              return `
-                <div class="attach-item">
-                  <div class="attach-header" onclick="toggleAttach('${id}',${i})">
-                    <span class="attach-icon">${icon}</span>
-                    <span>${escHtml(a.filename||'첨부파일')}</span>
-                    <span class="attach-toggle" id="att-toggle-${id}-${i}">펼치기 ▾</span>
-                  </div>
-                  <div class="attach-body" id="att-body-${id}-${i}">
-                    ${hasText
-                      ? escHtml(a.extractedText.slice(0, 5000)) + (a.extractedText.length>5000 ? '\n\n… (이하 생략)' : '')
-                      : '<span class="no-content">추출된 텍스트가 없습니다.</span>'}
-                  </div>
-                </div>`;
-            }).join('')}
-          </div>`
-        : `<p class="no-content">첨부파일이 없습니다.</p>`}
-    </div>`;
+  const hasSummary = !!(d.summary_ko);
 
   return `
     <div class="expand-inner">
-      <div class="expand-summary">${escHtml(d.summary_ko||'요약 없음')}</div>
+      ${hasSummary ? `<div class="expand-summary">${escHtml(d.summary_ko)}</div>` : ''}
       <div class="expand-meta">
         <span><strong>발신:</strong> ${escHtml(raw.sender||'-')}</span>
-        <span><strong>언어:</strong> ${d.language||'-'}</span>
-        <span><strong>키워드:</strong> ${(d.keywords||[]).join(', ')||'-'}</span>
+        ${d.language ? `<span><strong>언어:</strong> ${d.language}</span>` : ''}
+        ${(d.keywords||[]).length ? `<span><strong>키워드:</strong> ${(d.keywords||[]).join(', ')}</span>` : ''}
       </div>
       <hr class="expand-divider">
-      <div>
-        <div class="expand-tabs">
-          <div class="expand-tab ${tab==='body'?'active':''}"
-               onclick="switchTab('${id}','body')">원문</div>
-          <div class="expand-tab ${tab==='attachments'?'active':''}"
-               onclick="switchTab('${id}','attachments')">첨부파일 (${attachments.length})</div>
-        </div>
-        ${bodyPanel}
-        ${attsPanel}
-      </div>
+      ${hasBody
+        ? `<div class="raw-body">${escHtml(raw.body_plain)}</div>`
+        : `<p class="no-content">원문 텍스트가 없습니다.</p>`}
     </div>`;
 }
 
@@ -504,29 +459,6 @@ function escHtml(str) {
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
-}
-
-// ── 탭 전환 (리렌더 없이 DOM 직접 조작) ──────────────────
-function switchTab(id, tab) {
-  tabState[id] = tab;
-  // 탭 버튼
-  document.querySelectorAll(`[onclick*="switchTab('${id}'"]`).forEach(el => {
-    el.classList.toggle('active', el.getAttribute('onclick').includes(`'${tab}'`));
-  });
-  // 패널
-  const bodyPanel = document.getElementById(`tp-body-${id}`);
-  const attPanel  = document.getElementById(`tp-att-${id}`);
-  if (bodyPanel) bodyPanel.classList.toggle('active', tab==='body');
-  if (attPanel)  attPanel.classList.toggle('active', tab==='attachments');
-}
-
-// ── 첨부파일 개별 펼치기 ─────────────────────────────────
-function toggleAttach(id, i) {
-  const body   = document.getElementById(`att-body-${id}-${i}`);
-  const toggle = document.getElementById(`att-toggle-${id}-${i}`);
-  if (!body) return;
-  const open = body.classList.toggle('open');
-  if (toggle) toggle.textContent = open ? '접기 ▴' : '펼치기 ▾';
 }
 
 // ── 렌더 ─────────────────────────────────────────────────
