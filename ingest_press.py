@@ -100,7 +100,7 @@ raw_row = {
 with httpx.Client() as client:
     res = client.post(
         f"{SUPABASE_URL}/rest/v1/press_raw",
-        headers={**headers, "Prefer": "return=representation"},
+        headers={**headers, "Prefer": "return=representation,resolution=ignore-duplicates"},
         json=raw_row
     )
     if res.status_code not in (200, 201):
@@ -109,7 +109,11 @@ with httpx.Client() as client:
             exit(0)
         raise Exception(f"Supabase raw insert failed: {res.text}")
 
-    raw_id = res.json()[0]["id"]
+    rows = res.json()
+    if not rows:
+        print("Skipped: duplicate message_id")
+        exit(0)
+    raw_id = rows[0]["id"]
     print(f"Raw saved: {raw_id}")
 
 # 2. Gemini 파싱 + structured 저장
