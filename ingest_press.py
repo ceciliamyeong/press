@@ -56,7 +56,7 @@ def parse_with_gemini(subject, body, attachments_text):
   "company": "발신 기업/기관명",
   "title": "정제된 한국어 제목",
   "summary_ko": "한국어 요약 3~5줄",
-  "category": "listing|partnership|funding|regulation|product|event|finance|other 중 하나 (증권사·은행·금융기관 발신이면 finance)",
+  "category": "listing|partnership|funding|regulation|product|event|crypto|finance|fintech|other 중 하나. 기준: listing=토큰/코인 상장, partnership=파트너십/MOU, funding=투자/펀딩, regulation=규제/정책/법률, product=신제품/서비스 출시, event=행사/컨퍼런스, crypto=크립토 프로젝트·거래소·블록체인 일반 소식, finance=은행·증권사·자산운용사·금융기관, fintech=핀테크·결제·금융IT, other=기타",
   "tokens": ["관련 토큰 심볼 배열, 없으면 []"],
   "keywords": ["핵심 키워드 5개 이내"],
   "language": "ko|en|mixed 중 하나",
@@ -100,7 +100,7 @@ raw_row = {
 with httpx.Client() as client:
     res = client.post(
         f"{SUPABASE_URL}/rest/v1/press_raw",
-        headers={**headers, "Prefer": "return=representation,resolution=ignore-duplicates"},
+        headers={**headers, "Prefer": "return=representation"},
         json=raw_row
     )
     if res.status_code not in (200, 201):
@@ -109,11 +109,7 @@ with httpx.Client() as client:
             exit(0)
         raise Exception(f"Supabase raw insert failed: {res.text}")
 
-    rows = res.json()
-    if not rows:
-        print("Skipped: duplicate message_id")
-        exit(0)
-    raw_id = rows[0]["id"]
+    raw_id = res.json()[0]["id"]
     print(f"Raw saved: {raw_id}")
 
 # 2. Gemini 파싱 + structured 저장
