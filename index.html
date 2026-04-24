@@ -90,7 +90,7 @@ select {
 
 table { 
   width: 100%; 
-  min-width: 900px;
+  min-width: 700px;
   border-collapse: collapse; 
   font-size: 13px; 
   margin-top: 1px; 
@@ -151,17 +151,103 @@ td { padding: 10px 10px; vertical-align: middle; overflow: hidden; text-overflow
 .dot { width: 6px; height: 6px; border-radius: 50%; background: #e5e5e3; }
 .dot.on { background: #10b981; }
 
+/* ── 확장 패널 ── */
 .expand-row td { padding: 0; white-space: normal; }
 .expand-inner {
-  padding: 14px 16px 14px 24px;
+  padding: 16px 20px 16px 24px;
   border-left: 2px solid #3b82f6;
   margin: 0 10px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.expand-inner .summary { font-size: 13px; color: #333; line-height: 1.7; margin-bottom: 10px; }
+
+/* 요약 */
+.expand-summary { font-size: 13px; color: #333; line-height: 1.7; }
+
+/* 메타 */
 .expand-meta { display: flex; gap: 16px; flex-wrap: wrap; }
 .expand-meta span { font-size: 12px; color: #888; }
 .expand-meta span strong { color: #333; font-weight: 500; }
 
+/* 섹션 구분선 */
+.expand-divider {
+  border: none;
+  border-top: 1px solid #e5e5e3;
+}
+
+/* 원문 / 첨부파일 탭 */
+.expand-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e5e5e3;
+}
+.expand-tab {
+  padding: 5px 12px;
+  font-size: 12px;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  user-select: none;
+}
+.expand-tab.active { color: #1a1a1a; font-weight: 500; border-bottom-color: #3b82f6; }
+.expand-tab-panel { display: none; }
+.expand-tab-panel.active { display: block; }
+
+/* 원문 텍스트 박스 */
+.raw-body {
+  font-size: 12px;
+  color: #444;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f8f8f7;
+  border: 1px solid #e5e5e3;
+  border-radius: 6px;
+  padding: 12px 14px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+/* 첨부파일 목록 */
+.attach-list { display: flex; flex-direction: column; gap: 10px; }
+.attach-item {
+  border: 1px solid #e5e5e3;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.attach-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f5f5f3;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+}
+.attach-header:hover { background: #efefed; }
+.attach-icon { font-size: 14px; }
+.attach-toggle { margin-left: auto; color: #aaa; font-size: 11px; }
+.attach-body {
+  display: none;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 10px 14px;
+  max-height: 260px;
+  overflow-y: auto;
+  border-top: 1px solid #e5e5e3;
+}
+.attach-body.open { display: block; }
+.no-content { font-size: 12px; color: #aaa; padding: 4px 0; }
+
+/* 카드 뷰 */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -268,6 +354,8 @@ let sortKey = 'date';
 let sortDir = -1;
 let currentView = 'table';
 let expandedId = null;
+// 탭 상태: { [id]: 'body' | 'attachments' }
+const tabState = {};
 
 async function loadData() {
   try {
@@ -282,13 +370,13 @@ async function loadData() {
         press_raw: raw
       })).filter(d => d.id);
       render();
-    }
-    else { showError(); }
+    } else { showError(); }
   } catch(e) { showError(); }
 }
 
 function showError() {
-  document.getElementById('table-body').innerHTML = `<tr><td colspan="6" class="empty">데이터를 불러올 수 없습니다</td></tr>`;
+  document.getElementById('table-body').innerHTML =
+    `<tr><td colspan="6" class="empty">데이터를 불러올 수 없습니다</td></tr>`;
 }
 
 function filtered() {
@@ -304,6 +392,11 @@ function filtered() {
       (!cat || d.category === cat) &&
       (!lang || d.language === lang) &&
       (!score || (d.importance_score||0) >= score);
+  }).sort((a, b) => {
+    if (sortKey === 'date') return sortDir * (new Date(b.press_raw?.received_at||b.parsed_at) - new Date(a.press_raw?.received_at||a.parsed_at));
+    if (sortKey === 'company') return sortDir * (a.company||'').localeCompare(b.company||'');
+    if (sortKey === 'score') return sortDir * ((b.importance_score||0) - (a.importance_score||0));
+    return 0;
   });
 }
 
@@ -314,7 +407,8 @@ function formatDate(d) {
 }
 
 function dots(n) {
-  return Array.from({length:5}, (_,i) => `<div class="dot ${i<n?'on':''}"></div>`).join('');
+  return Array.from({length:5}, (_,i) =>
+    `<div class="dot ${i<n?'on':''}"></div>`).join('');
 }
 
 function catBadge(cat) {
@@ -331,10 +425,111 @@ function updateStats(rows) {
   const todayStr = now.toDateString();
   const weekAgo = new Date(now - 7*24*60*60*1000);
   document.getElementById('total-count').textContent = rows.length;
-  document.getElementById('today-count').textContent = rows.filter(d => new Date(d.press_raw?.received_at||d.parsed_at).toDateString()===todayStr).length;
-  document.getElementById('week-count').textContent = rows.filter(d => new Date(d.press_raw?.received_at||d.parsed_at)>=weekAgo).length;
+  document.getElementById('today-count').textContent =
+    rows.filter(d => new Date(d.press_raw?.received_at||d.parsed_at).toDateString()===todayStr).length;
+  document.getElementById('week-count').textContent =
+    rows.filter(d => new Date(d.press_raw?.received_at||d.parsed_at)>=weekAgo).length;
 }
 
+// ── 확장 패널 HTML 생성 ──────────────────────────────────
+function expandHTML(d) {
+  const id = d.id;
+  const tab = tabState[id] || 'body';
+  const raw = d.press_raw || {};
+  const attachments = Array.isArray(raw.raw_attachments) ? raw.raw_attachments : [];
+  const hasBody = !!(raw.body_plain && raw.body_plain.trim());
+  const hasAtts = attachments.length > 0;
+
+  // 원문 탭 패널
+  const bodyPanel = `
+    <div class="expand-tab-panel ${tab==='body'?'active':''}" id="tp-body-${id}">
+      ${hasBody
+        ? `<div class="raw-body">${escHtml(raw.body_plain)}</div>`
+        : `<p class="no-content">원문 텍스트가 없습니다.</p>`}
+    </div>`;
+
+  // 첨부파일 탭 패널
+  const attsPanel = `
+    <div class="expand-tab-panel ${tab==='attachments'?'active':''}" id="tp-att-${id}">
+      ${hasAtts
+        ? `<div class="attach-list">
+            ${attachments.map((a, i) => {
+              const ext = (a.filename||'').split('.').pop().toLowerCase();
+              const icon = ext==='pdf' ? '📄' : ext==='docx'||ext==='doc' ? '📝' : '📎';
+              const hasText = !!(a.extractedText && a.extractedText.trim());
+              return `
+                <div class="attach-item">
+                  <div class="attach-header" onclick="toggleAttach('${id}',${i})">
+                    <span class="attach-icon">${icon}</span>
+                    <span>${escHtml(a.filename||'첨부파일')}</span>
+                    <span class="attach-toggle" id="att-toggle-${id}-${i}">펼치기 ▾</span>
+                  </div>
+                  <div class="attach-body" id="att-body-${id}-${i}">
+                    ${hasText
+                      ? escHtml(a.extractedText.slice(0, 5000)) + (a.extractedText.length>5000 ? '\n\n… (이하 생략)' : '')
+                      : '<span class="no-content">추출된 텍스트가 없습니다.</span>'}
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>`
+        : `<p class="no-content">첨부파일이 없습니다.</p>`}
+    </div>`;
+
+  return `
+    <div class="expand-inner">
+      <div class="expand-summary">${escHtml(d.summary_ko||'요약 없음')}</div>
+      <div class="expand-meta">
+        <span><strong>발신:</strong> ${escHtml(raw.sender||'-')}</span>
+        <span><strong>언어:</strong> ${d.language||'-'}</span>
+        <span><strong>키워드:</strong> ${(d.keywords||[]).join(', ')||'-'}</span>
+      </div>
+      <hr class="expand-divider">
+      <div>
+        <div class="expand-tabs">
+          <div class="expand-tab ${tab==='body'?'active':''}"
+               onclick="switchTab('${id}','body')">원문</div>
+          <div class="expand-tab ${tab==='attachments'?'active':''}"
+               onclick="switchTab('${id}','attachments')">첨부파일 (${attachments.length})</div>
+        </div>
+        ${bodyPanel}
+        ${attsPanel}
+      </div>
+    </div>`;
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── 탭 전환 (리렌더 없이 DOM 직접 조작) ──────────────────
+function switchTab(id, tab) {
+  tabState[id] = tab;
+  // 탭 버튼
+  document.querySelectorAll(`[onclick*="switchTab('${id}'"]`).forEach(el => {
+    el.classList.toggle('active', el.getAttribute('onclick').includes(`'${tab}'`));
+  });
+  // 패널
+  const bodyPanel = document.getElementById(`tp-body-${id}`);
+  const attPanel  = document.getElementById(`tp-att-${id}`);
+  if (bodyPanel) bodyPanel.classList.toggle('active', tab==='body');
+  if (attPanel)  attPanel.classList.toggle('active', tab==='attachments');
+}
+
+// ── 첨부파일 개별 펼치기 ─────────────────────────────────
+function toggleAttach(id, i) {
+  const body   = document.getElementById(`att-body-${id}-${i}`);
+  const toggle = document.getElementById(`att-toggle-${id}-${i}`);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  if (toggle) toggle.textContent = open ? '접기 ▴' : '펼치기 ▾';
+}
+
+// ── 렌더 ─────────────────────────────────────────────────
 function render() {
   const rows = filtered();
   updateStats(rows);
@@ -344,28 +539,22 @@ function render() {
 
 function renderTable(rows) {
   const tbody = document.getElementById('table-body');
-  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty">검색 결과가 없습니다</td></tr>`; return; }
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">검색 결과가 없습니다</td></tr>`;
+    return;
+  }
   tbody.innerHTML = rows.map(d => {
     const isExp = expandedId === d.id;
     return `
       <tr onclick="toggleExpand('${d.id}')" class="${isExp?'expanded':''}">
         <td class="col-date" style="color:#888;font-size:12px">${formatDate(d.press_raw?.received_at||d.parsed_at)}</td>
-        <td class="col-company" style="font-weight:500">${d.company||'-'}</td>
-        <td class="col-title">${d.title||d.press_raw?.subject||'-'}</td>
+        <td class="col-company" style="font-weight:500">${escHtml(d.company||'-')}</td>
+        <td class="col-title">${escHtml(d.title||d.press_raw?.subject||'-')}</td>
         <td class="col-cat">${catBadge(d.category)}</td>
         <td class="col-tokens">${tokenTags(d.tokens)}</td>
         <td class="col-score"><div class="score-dots">${dots(d.importance_score||0)}</div></td>
       </tr>
-      ${isExp ? `<tr class="expand-row"><td colspan="6">
-        <div class="expand-inner">
-          <div class="summary">${d.summary_ko||'요약 없음'}</div>
-          <div class="expand-meta">
-            <span><strong>발신:</strong> ${d.press_raw?.sender||'-'}</span>
-            <span><strong>언어:</strong> ${d.language||'-'}</span>
-            <span><strong>키워드:</strong> ${(d.keywords||[]).join(', ')||'-'}</span>
-          </div>
-        </div>
-      </td></tr>` : ''}`;
+      ${isExp ? `<tr class="expand-row"><td colspan="6">${expandHTML(d)}</td></tr>` : ''}`;
   }).join('');
 }
 
@@ -373,19 +562,25 @@ function renderCards(rows) {
   const grid = document.getElementById('card-grid');
   if (!rows.length) { grid.innerHTML = `<div class="empty">검색 결과가 없습니다</div>`; return; }
   grid.innerHTML = rows.map(d => `
-    <div class="card">
+    <div class="card" onclick="toggleExpand('${d.id}')">
       <div class="card-header">
-        <span class="card-company">${d.company||'-'}</span>
+        <span class="card-company">${escHtml(d.company||'-')}</span>
         <span class="card-date">${formatDate(d.press_raw?.received_at||d.parsed_at)}</span>
       </div>
-      <div class="card-title">${d.title||d.press_raw?.subject||'-'}</div>
-      <div class="card-summary">${d.summary_ko||'-'}</div>
+      <div class="card-title">${escHtml(d.title||d.press_raw?.subject||'-')}</div>
+      <div class="card-summary">${escHtml(d.summary_ko||'-')}</div>
       <div class="card-footer">${catBadge(d.category)} ${tokenTags(d.tokens)}</div>
     </div>`).join('');
 }
 
-function toggleExpand(id) { expandedId = expandedId===id ? null : id; render(); }
-function sortBy(key) { if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=-1;} render(); }
+function toggleExpand(id) {
+  expandedId = expandedId === id ? null : id;
+  render();
+}
+function sortBy(key) {
+  if (sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=-1; }
+  render();
+}
 function setView(v) {
   currentView = v;
   document.getElementById('table-view').style.display = v==='table'?'block':'none';
