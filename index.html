@@ -208,6 +208,27 @@ td { padding: 10px 10px; vertical-align: middle; overflow: hidden; text-overflow
 
 .empty { text-align: center; padding: 60px; color: #aaa; font-size: 13px; }
 .loading { text-align: center; padding: 60px; color: #aaa; font-size: 13px; }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 24px;
+}
+.pagination button {
+  padding: 6px 14px;
+  font-size: 12px;
+  border: 1px solid #e5e5e3;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+.pagination button:hover { background: #f5f5f3; }
+.pagination button.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.pagination button:disabled { opacity: 0.3; cursor: default; }
+.pagination span { font-size: 12px; color: #888; }
 </style>
 </head>
 <body>
@@ -278,6 +299,7 @@ td { padding: 10px 10px; vertical-align: middle; overflow: hidden; text-overflow
     <div class="card-grid" id="card-grid"></div>
   </div>
 </div>
+<div class="pagination" id="pagination"></div>
 
 <script>
 const SUPABASE_URL = 'https://xiyojjywtcwiymibmszr.supabase.co';
@@ -298,14 +320,16 @@ function clickSearch(term, e) {
 
 let allData = [];
 let sortKey = 'date';
-let sortDir = -1;
+let sortDir = 1; // 1 = 최신순
 let currentView = 'table';
 let expandedId = null;
+let currentPage = 1;
+const PAGE_SIZE = 50;
 
 async function loadData() {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/press_raw?select=*,press_structured(*)&order=received_at.desc&limit=200`,
+      `${SUPABASE_URL}/rest/v1/press_raw?select=*,press_structured(*)&order=received_at.desc&limit=1000`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
     const data = await res.json();
@@ -417,10 +441,47 @@ function escHtml(str) {
 }
 
 function render() {
+  currentPage = 1;
   const rows = filtered();
   updateStats(rows);
-  if (currentView === 'table') renderTable(rows);
-  else renderCards(rows);
+  renderPage(rows);
+}
+
+function renderPage(rows) {
+  const total = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = rows.slice(start, start + PAGE_SIZE);
+
+  if (currentView === 'table') renderTable(pageRows);
+  else renderCards(pageRows);
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const el = document.getElementById('pagination');
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  let html = `<button onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>◀</button>`;
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+      html += `<button class="${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    } else if (Math.abs(i - currentPage) === 3) {
+      html += `<span>…</span>`;
+    }
+  }
+  html += `<button onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>▶</button>`;
+  html += `<span>${currentPage} / ${totalPages} 페이지</span>`;
+  el.innerHTML = html;
+}
+
+function goPage(p) {
+  const rows = filtered();
+  const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderPage(rows);
+  window.scrollTo(0, 0);
 }
 
 function renderTable(rows) {
@@ -461,10 +522,10 @@ function renderCards(rows) {
 
 function toggleExpand(id) {
   expandedId = expandedId === id ? null : id;
-  render();
+  renderPage(filtered());
 }
 function sortBy(key) {
-  if (sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=-1; }
+  if (sortKey===key) sortDir*=-1; else { sortKey=key; sortDir=1; }
   render();
 }
 function setView(v) {
