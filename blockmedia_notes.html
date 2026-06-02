@@ -321,10 +321,9 @@
 // ══════════════════════════════════════════
 //  🔑 키 설정 — 여기에 직접 입력하세요
 // ══════════════════════════════════════════
-const SUPABASE_URL = 'https://xiyojjywtcwiymibmszr.supabase.co';  // 이미 알고 있어요
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpeW9qanl3dGN3aXltaWJtc3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODE4NzEsImV4cCI6MjA5MjQ1Nzg3MX0.kQYwgwKWledEt8S_8iI6i5aZdsWt9VDIfsty-mqYw7Q
-';
-const GEMINI_KEY    = 'YOUR_GEMINI_API_KEY';
+const SUPABASE_URL  = 'https://xiyojjywtcwiymibmszr.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_RQGUYA-vTnhk3uT1kr8zlA_zwlDbo8i';
+const GEMINI_KEY    = 'YOUR_GEMINI_API_KEY';  // ← Gemini 키만 여기 넣으세요
 // ══════════════════════════════════════════
 
 let currentSource = 'note';
@@ -392,7 +391,7 @@ ${text}`;
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -505,50 +504,66 @@ async function saveToSupabase() {
 
 // ── 큐 로드 ──
 async function loadQueue() {
-  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
-    document.getElementById('queueList').innerHTML =
-      '<div style="color:var(--faint);font-size:13px;padding:16px 0">SUPABASE_URL을 설정해주세요.</div>';
-    return;
-  }
+  const h = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
 
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/press_notes?select=*&order=created_at.desc&limit=50`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    // 두 테이블 병렬 호출
+    const [notesRes, pressRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=*&order=created_at.desc&limit=50`, { headers: h }),
+      fetch(`${SUPABASE_URL}/rest/v1/press_structured?select=*&order=parsed_at.desc&limit=50`, { headers: h })
+    ]);
+    const notes = await notesRes.json();
+    const press = await pressRes.json();
+
+    // press_structured → 통일 포맷으로 변환
+    const pressNorm = press.map(p => ({
+      id:              p.id,
+      _table:          'press',
+      created_at:      p.parsed_at,
+      summary_ko:      p.summary_ko || p.title,
+      source_type:     'press',
+      status:          'inbox',
+      importance_score: p.importance_score || 0,
+      tags:            Array.isArray(p.keywords) ? p.keywords : (p.keywords ? Object.values(p.keywords) : []),
+      company:         p.company,
+      category:        p.category,
+      notes_thread:    []
+    }));
+
+    // press_notes → 통일 포맷
+    const notesNorm = notes.map(n => ({ ...n, _table: 'note' }));
+
+    // 합치고 날짜순 정렬
+    const all = [...notesNorm, ...pressNorm].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
     );
-    const rows = await res.json();
 
-    // 카운트
+    // 카운트 (press_notes 기준)
     const counts = { inbox:0, following:0, stale:0, done:0 };
-    rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
-    document.getElementById('cnt-inbox').textContent     = counts.inbox;
-    document.getElementById('cnt-following').textContent = counts.following;
-    document.getElementById('cnt-stale').textContent     = counts.stale;
-    document.getElementById('cnt-done').textContent      = counts.done;
+    notesNorm.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    document.getElementById('cnt-inbox').textContent      = counts.inbox;
+    document.getElementById('cnt-following').textContent  = counts.following;
+    document.getElementById('cnt-stale').textContent      = counts.stale;
+    document.getElementById('cnt-done').textContent       = counts.done;
 
-    // 큐 렌더
     const statusLabel = { inbox:'인박스', following:'취재중', stale:'팔로업 필요', done:'완료' };
     const statusClass = { inbox:'b', following:'b', stale:'r', done:'n' };
     const prioClass   = s => s >= 4 ? 'hi' : s >= 3 ? 'mid' : '';
 
-    document.getElementById('queueList').innerHTML = rows.length === 0
-      ? '<div style="color:var(--faint);font-size:13px;padding:16px 0">저장된 노트가 없습니다.</div>'
-      : rows.map(r => {
+    document.getElementById('queueList').innerHTML = all.length === 0
+      ? '<div style="color:var(--faint);font-size:13px;padding:16px 0">데이터가 없습니다.</div>'
+      : all.map(r => {
           const date = new Date(r.created_at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'});
           const tags = (r.tags||[]).slice(0,3).map(t=>`<span class="chip" style="font-size:11px">${t}</span>`).join('');
+          const isNote = r._table === 'note';
           const isStale = r.status === 'stale';
-          return `
-            <div class="track-row ${isStale?'stale':''}" onclick="toggleComment(this)">
-              <div class="top">
-                <span class="bdg ${statusClass[r.status]||'n'}">${statusLabel[r.status]||r.status}</span>
-                <h4>${r.summary_ko || r.content.slice(0,60) + '...'}</h4>
-                ${r.importance_score >= 3 ? `<span class="prio ${prioClass(r.importance_score)}">${'★'.repeat(r.importance_score)}</span>` : ''}
-              </div>
-              <div class="track-meta">
-                <span style="font-size:11px;background:var(--gray-bg);padding:2px 7px;border-radius:5px;font-weight:600">${r.source_type==='note'?'✏️ 직접취재':'📨 보도자료'}</span>
-                <span style="display:flex;gap:5px">${tags}</span>
-                <span style="margin-left:auto;font-size:11.5px;color:var(--faint)">${date}</span>
-              </div>
+          const srcLabel = isNote ? '✏️ 직접취재' : '📨 보도자료';
+          const srcColor = isNote ? 'var(--green-bg)' : 'var(--blue-bg)';
+          const srcInk   = isNote ? 'var(--green)' : 'var(--blue)';
+          const title    = r.summary_ko || (r.content ? r.content.slice(0,60)+'...' : r.company || '—');
+
+          // 보도자료는 댓글 없음, 취재노트만 댓글 가능
+          const commentSection = isNote ? `
               <div class="cmt-toggle">💬 메모 추가 <span style="font-size:10px">▾</span></div>
               <div class="comments">
                 <div class="cmt-input">
@@ -562,22 +577,39 @@ async function loadQueue() {
                       <div class="cmt-body">${c.text}</div>
                     </div>`).join('')}
                 </div>
+              </div>` : '';
+
+          return `
+            <div class="track-row ${isStale?'stale':''}" onclick="toggleComment(this)">
+              <div class="top">
+                <span class="bdg ${statusClass[r.status]||'n'}">${isNote ? (statusLabel[r.status]||r.status) : (r.category||'보도자료')}</span>
+                <h4>${title}</h4>
+                ${r.importance_score >= 3 ? `<span class="prio ${prioClass(r.importance_score)}">${'★'.repeat(r.importance_score)}</span>` : ''}
               </div>
+              <div class="track-meta">
+                <span style="font-size:11px;background:${srcColor};color:${srcInk};padding:2px 7px;border-radius:5px;font-weight:600">${srcLabel}</span>
+                ${r.company ? `<span style="font-size:12px;font-weight:600">${r.company}</span>` : ''}
+                <span style="display:flex;gap:5px">${tags}</span>
+                <span style="margin-left:auto;font-size:11.5px;color:var(--faint)">${date}</span>
+              </div>
+              ${commentSection}
             </div>`;
         }).join('');
 
-    // 최근 저장
-    document.getElementById('recentList').innerHTML = rows.slice(0,5).map(r => {
-      const t = new Date(r.created_at).toLocaleTimeString('ko-KR',{hour:'numeric',minute:'numeric'});
-      return `
-        <div class="live-row">
-          <div class="live-dot ${r.status==='done'?'gray':''}"></div>
-          <div>
-            <div class="txt">${r.summary_ko || r.content.slice(0,40)+'...'}</div>
-            <div class="t">${t} · ${r.source_type==='note'?'직접취재':'보도자료'}</div>
-          </div>
-        </div>`;
-    }).join('');
+    // 최근 저장 (사이드 — 취재노트만)
+    document.getElementById('recentList').innerHTML = notesNorm.slice(0,5).length === 0
+      ? '<div style="color:var(--faint);font-size:12.5px">저장된 노트가 없습니다</div>'
+      : notesNorm.slice(0,5).map(r => {
+          const t = new Date(r.created_at).toLocaleTimeString('ko-KR',{hour:'numeric',minute:'numeric'});
+          return `
+            <div class="live-row">
+              <div class="live-dot"></div>
+              <div>
+                <div class="txt">${r.summary_ko || r.content?.slice(0,40)+'...'}</div>
+                <div class="t">${t} · 직접취재</div>
+              </div>
+            </div>`;
+        }).join('');
 
   } catch(e) {
     document.getElementById('queueList').innerHTML =
