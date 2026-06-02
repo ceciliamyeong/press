@@ -10,10 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inject secrets into HTML
-        run: |
-          sed -i "s|YOUR_GEMINI_API_KEY|${{ secrets.GEMINI_API_KEY }}|g" blockmedia_notes.html
-
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
