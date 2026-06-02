@@ -3,299 +3,354 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>블록미디어 취재노트</title>
+<title>블록미디어 인텔리전스</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-  /* ── 설정: 여기에 키 입력 ── */
-  /* SUPABASE_URL, SUPABASE_KEY, GEMINI_KEY 는 아래 script 블록에 있습니다 */
+:root{
+  --bg:#F6F5F1;--card:#FFF;--ink:#1A1A17;--muted:#6B6A63;--faint:#9C9A90;
+  --line:#E5E3DB;--line2:#EFEDE6;
+  --blue:#1F6FEB;--blue-bg:#E8F0FD;
+  --green:#1B8A5A;--green-bg:#E3F3EB;
+  --amber:#B07A12;--amber-bg:#F7EED6;
+  --red:#C0392B;--red-bg:#FBE9E7;
+  --gray-bg:#ECEAE2;--gray-ink:#5F5E57;
+  --accent:#0F1A2E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+header{position:sticky;top:0;z-index:50;background:rgba(246,245,241,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar{display:flex;align-items:center;gap:20px;height:58px}
+.logo{font-weight:800;font-size:15px;letter-spacing:-.02em;color:var(--accent);display:flex;align-items:center;gap:8px}
+.logo .dot{width:8px;height:8px;border-radius:50%;background:var(--blue)}
+.logo small{font-weight:500;color:var(--faint);font-size:11px;padding-left:8px;border-left:1px solid var(--line)}
+nav{display:flex;gap:3px;margin-left:auto}
+.tab{padding:7px 14px;border-radius:8px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer;border:none;background:none;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px}
+.tab:hover{background:var(--line2);color:var(--ink)}
+.tab.on{background:var(--accent);color:#fff}
+.tab .n{font-size:10px;opacity:.6;font-weight:700}
+.flowhint{font-size:12px;color:var(--faint);text-align:center;padding:9px 0;border-top:1px solid var(--line2)}
+.flowhint b{color:var(--blue);font-weight:600}
+.screen{display:none;padding:26px 0 80px;animation:fadeup .3s ease}
+.screen.on{display:block}
+@keyframes fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-  :root {
-    --bg:#F6F5F1; --card:#FFFFFF; --ink:#1A1A17; --muted:#6B6A63; --faint:#9C9A90;
-    --line:#E5E3DB; --line2:#EFEDE6;
-    --blue:#1F6FEB; --blue-bg:#E8F0FD; --blue-dark:#1458C0;
-    --green:#1B8A5A; --green-bg:#E3F3EB;
-    --amber:#B07A12; --amber-bg:#F7EED6;
-    --red:#C0392B; --red-bg:#FBE9E7;
-    --gray-bg:#ECEAE2; --gray-ink:#5F5E57;
-    --accent:#0F1A2E;
-  }
-  * { box-sizing:border-box; margin:0; padding:0 }
-  body { font-family:'Pretendard',-apple-system,sans-serif; background:var(--bg); color:var(--ink);
-    font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased }
+/* 공통 */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.panel h3{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.panel h3 .ico{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;background:var(--blue-bg);color:var(--blue);font-size:13px;flex-shrink:0}
+.sec-h{font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:11px;display:flex;align-items:center;gap:7px}
+.auto-pill{background:var(--blue-bg);color:var(--blue);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;text-transform:none;letter-spacing:0}
+.bdg{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px}
+.bdg.g{background:var(--green-bg);color:var(--green)}
+.bdg.a{background:var(--amber-bg);color:var(--amber)}
+.bdg.b{background:var(--blue-bg);color:var(--blue)}
+.bdg.n{background:var(--gray-bg);color:var(--gray-ink)}
+.bdg.r{background:var(--red-bg);color:var(--red)}
+.stars{color:#E0A82E;font-size:12px;letter-spacing:1px}
+.scr-title{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.scr-sub{font-size:13px;color:var(--muted);margin-bottom:22px}
+.scr-sub b{color:var(--blue)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.layout{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
 
-  /* ── 헤더 ── */
-  header { position:sticky; top:0; z-index:50; background:rgba(246,245,241,.92);
-    backdrop-filter:blur(10px); border-bottom:1px solid var(--line) }
-  .topbar { display:flex; align-items:center; gap:20px; height:58px; max-width:1160px; margin:0 auto; padding:0 24px }
-  .logo { font-weight:800; font-size:15px; letter-spacing:-.02em; color:var(--accent);
-    display:flex; align-items:center; gap:8px }
-  .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--blue) }
-  .logo small { font-weight:500; color:var(--faint); font-size:11px; padding-left:8px; border-left:1px solid var(--line) }
-  nav { display:flex; gap:3px; margin-left:auto }
-  .tab { padding:7px 14px; border-radius:8px; font-weight:600; font-size:13px; color:var(--muted);
-    cursor:pointer; border:none; background:none; font-family:inherit; transition:.15s; display:flex; align-items:center; gap:6px }
-  .tab:hover { background:var(--line2); color:var(--ink) }
-  .tab.on { background:var(--accent); color:#fff }
-  .tab .n { font-size:10px; opacity:.6; font-weight:700 }
-  .flowhint { font-size:12px; color:var(--faint); text-align:center; padding:9px 0;
-    border-top:1px solid var(--line2) }
-  .flowhint b { color:var(--blue); font-weight:600 }
+/* 입력 */
+textarea{width:100%;height:190px;border:1px solid var(--line);border-radius:10px;padding:13px;font-family:inherit;font-size:13.5px;line-height:1.65;resize:none;color:var(--ink);background:#FCFBF8}
+textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
+.src-row{display:flex;gap:8px;margin-bottom:12px}
+.src-btn{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:#FCFBF8;font-family:inherit;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+.src-btn:hover{border-color:var(--blue);color:var(--blue)}
+.src-btn.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+.btn-primary{width:100%;margin-top:12px;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary:hover{opacity:.88}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:rot .65s linear infinite;display:none}
+@keyframes rot{to{transform:rotate(360deg)}}
 
-  /* ── 레이아웃 ── */
-  .wrap { max-width:1160px; margin:0 auto; padding:0 24px 80px }
-  .screen { display:none; padding:28px 0; animation:fadeup .3s ease }
-  .screen.on { display:block }
-  @keyframes fadeup { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+/* AI 결과 */
+.out{display:none}
+.out.show{display:block;animation:fadeup .4s ease}
+.ex-lbl{font-size:10.5px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:#FCFBF8;font-size:12.5px;font-weight:600}
+.chip .k{font-size:10px;color:var(--faint);font-weight:700}
+.ev-row{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:7px}
+.ev-row .top{display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap}
+.ev-row .ttl{font-weight:700;font-size:13px;flex:1}
+.ev-row .meta{font-size:11.5px;color:var(--muted)}
+.fanout{margin-top:15px;border-top:1px dashed var(--line);padding-top:14px}
+.fan-list{display:flex;flex-direction:column;gap:7px}
+.fan-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;background:var(--blue-bg);font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;border:1px solid transparent;transition:.15s}
+.fan-item:hover{border-color:var(--blue)}
+.fan-item .tag{font-size:11px;color:var(--muted);font-weight:600}
+.fan-item .arrow{margin-left:auto;color:var(--blue)}
+.save-btn{width:100%;margin-top:14px;padding:11px;border:none;border-radius:10px;background:var(--green);color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+.save-btn:hover{opacity:.88}
 
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px }
-  .layout { display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start }
+/* 팔로업 큐 */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+.metric .lbl{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:8px}
+.metric .num{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.metric.alert .num{color:var(--red)}
+.track-row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s}
+.track-row:hover{border-color:var(--blue)}
+.track-row.stale{border-left:3px solid var(--red)}
+.track-row .top{display:flex;align-items:center;gap:9px;margin-bottom:8px;flex-wrap:wrap}
+.track-row h4{font-size:14px;font-weight:700;letter-spacing:-.01em;flex:1}
+.prio{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;white-space:nowrap}
+.prio.hi{background:var(--red-bg);color:var(--red)}
+.prio.mid{background:var(--amber-bg);color:var(--amber)}
+.track-meta{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.stale-tag{color:var(--red);font-weight:700;margin-left:auto;white-space:nowrap}
+.cmt-toggle{margin-top:10px;font-size:12px;color:var(--blue);font-weight:600;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.comments{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
+.track-row.open .comments{display:block}
+.cmt{margin-bottom:10px}
+.cmt-head{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.cmt-name{font-size:12px;font-weight:700}
+.cmt-date{font-size:11px;color:var(--faint)}
+.cmt-body{font-size:13px;line-height:1.55}
+.cmt-input{display:flex;gap:7px;margin-top:11px}
+.cmt-input input{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-family:inherit;font-size:13px;background:#FCFBF8;color:var(--ink)}
+.cmt-input input:focus{outline:none;border-color:var(--blue)}
+.cmt-input button{border:none;background:var(--accent);color:#fff;border-radius:8px;padding:0 14px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.stale-item{font-size:12.5px;font-weight:600;display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line2)}
+.stale-item:last-child{border:none}
+.stale-item span{color:var(--red);font-weight:700}
 
-  .scr-title { font-size:20px; font-weight:800; letter-spacing:-.02em; margin-bottom:4px }
-  .scr-sub { font-size:13px; color:var(--muted); margin-bottom:22px }
-  .scr-sub b { color:var(--blue) }
+/* 엔티티 */
+.ent-head{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:18px}
+.ent-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.ent-ico{width:46px;height:46px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;flex-shrink:0}
+.ent-name{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.ent-name span{font-size:13px;font-weight:600;color:var(--muted);margin-left:8px}
+.ent-tags{display:flex;flex-wrap:wrap;gap:7px}
+.tl-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-bottom:11px;transition:.15s}
+.tl-item.fresh{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg)}
+.tl-item .top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.tl-item .date{font-size:11.5px;color:var(--faint);font-weight:600;margin-left:auto}
+.tl-item h4{font-size:15px;font-weight:700;letter-spacing:-.01em;margin-bottom:5px}
+.tl-item p{font-size:13px;color:var(--muted);line-height:1.6}
+.tl-item .src{font-size:11px;color:var(--faint);margin-top:8px}
+.live-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)}
+.live-row:last-child{border:none;padding-bottom:0}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);margin-top:5px;flex-shrink:0}
+.live-dot.gray{background:var(--faint)}
+.live-row .txt{font-size:12.5px;line-height:1.45}
+.live-row .t{font-size:11px;color:var(--faint);margin-top:2px}
+.rel-row{display:flex;align-items:center;gap:9px;padding:8px 0;font-size:13px;font-weight:600;border-bottom:1px solid var(--line2);cursor:pointer}
+.rel-row:last-child{border:none}
+.rel-row:hover{color:var(--blue)}
+.rel-ico{width:26px;height:26px;border-radius:7px;background:var(--gray-bg);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--gray-ink);flex-shrink:0}
 
-  /* ── 패널 ── */
-  .panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px }
-  .panel h3 { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:14px }
-  .panel h3 .ico { width:22px; height:22px; border-radius:6px; display:grid; place-items:center;
-    background:var(--blue-bg); color:var(--blue); font-size:13px; flex-shrink:0 }
+/* 브리핑 */
+.searchbar{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin-bottom:22px}
+.searchbar input{flex:1;border:none;background:none;font-family:inherit;font-size:14px;color:var(--ink)}
+.searchbar input:focus{outline:none}
+.searchbar .kbd{font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-weight:600}
+.brief-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px}
+.brief-card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px 16px;cursor:pointer;transition:.15s}
+.brief-card:hover{border-color:var(--blue)}
+.brief-card .top{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.brief-card h4{font-size:14px;font-weight:700;line-height:1.4;letter-spacing:-.01em}
+.brief-layout{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.feed-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:11px;cursor:pointer;transition:.15s}
+.feed-item:hover{border-color:var(--blue)}
+.feed-item .top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.feed-item .time{font-size:11.5px;color:var(--faint);font-weight:600}
+.feed-item .star{margin-left:auto;display:flex;align-items:center;gap:5px}
+.feed-item h4{font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:-.01em}
+.feed-item p{font-size:13px;color:var(--muted);line-height:1.55}
+.feed-tags{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.feed-tags .t{font-size:11px;color:var(--faint);font-weight:600;background:var(--line2);padding:2px 8px;border-radius:5px}
+.ask{background:var(--accent);border-radius:13px;padding:17px;color:#fff}
+.ask h3{font-size:13px;font-weight:700;margin-bottom:13px;opacity:.85}
+.ask .q{background:rgba(255,255,255,.1);border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:13px;display:flex;align-items:center;gap:8px}
+.ask .ans-l{font-size:11px;opacity:.6;font-weight:700;margin-bottom:8px}
+.ask .ans{font-size:12.5px;line-height:1.6;opacity:.92;padding-left:0}
+.ask .ans li{margin-bottom:5px;list-style:none;padding-left:14px;position:relative}
+.ask .ans li:before{content:"•";position:absolute;left:2px;opacity:.5}
+.ask .acts{margin-top:13px;display:flex;flex-direction:column;gap:7px}
+.ask .act{background:rgba(255,255,255,.08);border-radius:8px;padding:8px 11px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer;transition:.15s}
+.ask .act:hover{background:rgba(255,255,255,.16)}
 
-  .sec-h { font-size:11px; font-weight:700; color:var(--faint); text-transform:uppercase;
-    letter-spacing:.07em; margin-bottom:11px; display:flex; align-items:center; gap:7px }
-  .auto-pill { background:var(--blue-bg); color:var(--blue); font-size:10px; font-weight:700;
-    padding:2px 6px; border-radius:4px; text-transform:none; letter-spacing:0 }
+/* 프로 */
+.pro-banner{background:var(--accent);color:#fff;border-radius:14px;padding:17px 22px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+.pro-tag{background:#E0A82E;color:#1A1A17;font-size:12px;font-weight:800;padding:4px 11px;border-radius:6px;letter-spacing:.03em}
+.pro-banner .bt{font-size:15px;font-weight:700}
+.pro-banner .bs{font-size:12.5px;opacity:.72;margin-top:2px}
+.pro-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+.radar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:11px;border-left:3px solid var(--blue)}
+.radar .top{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.radar h4{font-size:14.5px;font-weight:700;flex:1}
+.radar .dday{font-size:12px;font-weight:800;color:var(--red);white-space:nowrap}
+.radar .interp{font-size:12.5px;color:var(--muted);line-height:1.55}
+.radar .interp b{color:var(--blue);font-weight:600}
+.watch-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line2)}
+.watch-row:last-child{border:none}
+.watch-row .wn{font-weight:600;font-size:13.5px;flex:1}
+.watch-row .wc{font-size:11px;font-weight:700;color:var(--blue);background:var(--blue-bg);padding:2px 8px;border-radius:5px}
+.toggle{width:38px;height:22px;border-radius:11px;background:var(--green);position:relative;cursor:pointer;flex-shrink:0}
+.toggle:after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff}
+.dl-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;transition:.15s}
+.dl-btn:hover{opacity:.88}
 
-  /* ── 뱃지 ── */
-  .bdg { display:inline-flex; align-items:center; font-size:11px; font-weight:700; padding:2px 8px; border-radius:5px }
-  .bdg.g { background:var(--green-bg); color:var(--green) }
-  .bdg.a { background:var(--amber-bg); color:var(--amber) }
-  .bdg.b { background:var(--blue-bg); color:var(--blue) }
-  .bdg.n { background:var(--gray-bg); color:var(--gray-ink) }
-  .bdg.r { background:var(--red-bg); color:var(--red) }
-  .stars { color:#E0A82E; font-size:12px; letter-spacing:1px }
+/* 토스트 */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#fff;padding:11px 22px;border-radius:10px;font-weight:600;font-size:13.5px;opacity:0;transition:.3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-  /* ── 입력 ── */
-  textarea { width:100%; height:200px; border:1px solid var(--line); border-radius:10px;
-    padding:13px; font-family:inherit; font-size:13.5px; line-height:1.65; resize:none;
-    color:var(--ink); background:#FCFBF8 }
-  textarea:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-bg) }
-
-  .source-row { display:flex; gap:8px; margin-bottom:12px }
-  .src-btn { flex:1; padding:8px; border:1px solid var(--line); border-radius:8px;
-    background:#FCFBF8; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--muted);
-    cursor:pointer; transition:.15s; text-align:center }
-  .src-btn:hover { border-color:var(--blue); color:var(--blue) }
-  .src-btn.on { border-color:var(--blue); background:var(--blue-bg); color:var(--blue) }
-
-  .btn-primary { width:100%; margin-top:12px; padding:12px; border:none; border-radius:10px;
-    background:var(--accent); color:#fff; font-family:inherit; font-weight:700; font-size:14px;
-    cursor:pointer; transition:.15s; display:flex; align-items:center; justify-content:center; gap:8px }
-  .btn-primary:hover { opacity:.88 }
-  .btn-primary:disabled { opacity:.45; cursor:not-allowed }
-
-  .spin { width:14px; height:14px; border:2px solid rgba(255,255,255,.35);
-    border-top-color:#fff; border-radius:50%; animation:rot .65s linear infinite; display:none }
-  @keyframes rot { to { transform:rotate(360deg) } }
-
-  /* ── 결과 ── */
-  .empty { display:grid; place-items:center; min-height:240px; text-align:center; color:var(--faint) }
-  .empty .big { font-size:28px; margin-bottom:8px; opacity:.4 }
-  .out { display:none }
-  .out.show { display:block; animation:fadeup .4s ease }
-
-  .ex-sec { margin-bottom:16px }
-  .ex-lbl { font-size:10.5px; font-weight:700; color:var(--faint); text-transform:uppercase;
-    letter-spacing:.06em; margin-bottom:8px }
-  .chips { display:flex; flex-wrap:wrap; gap:6px }
-  .chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:8px;
-    border:1px solid var(--line); background:#FCFBF8; font-size:12.5px; font-weight:600 }
-  .chip .k { font-size:10px; color:var(--faint); font-weight:700 }
-
-  .ev-row { border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin-bottom:7px }
-  .ev-row .top { display:flex; align-items:center; gap:7px; margin-bottom:4px; flex-wrap:wrap }
-  .ev-row .ttl { font-weight:700; font-size:13px; flex:1 }
-  .ev-row .meta { font-size:11.5px; color:var(--muted) }
-
-  .fanout { margin-top:15px; border-top:1px dashed var(--line); padding-top:14px }
-  .fan-list { display:flex; flex-direction:column; gap:7px }
-  .fan-item { display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:9px;
-    background:var(--blue-bg); font-size:13px; font-weight:600; color:var(--accent);
-    cursor:pointer; border:1px solid transparent; transition:.15s }
-  .fan-item:hover { border-color:var(--blue) }
-  .fan-item .arrow { margin-left:auto; color:var(--blue) }
-
-  .save-btn { width:100%; margin-top:14px; padding:11px; border:none; border-radius:10px;
-    background:var(--green); color:#fff; font-family:inherit; font-weight:700; font-size:14px;
-    cursor:pointer; transition:.15s; display:none }
-  .save-btn:hover { opacity:.88 }
-  .save-btn.show { display:block; animation:fadeup .3s ease }
-
-  /* ── 취재 큐 ── */
-  .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px }
-  .metric { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 16px }
-  .metric .lbl { font-size:12px; color:var(--muted); font-weight:600; margin-bottom:8px }
-  .metric .num { font-size:28px; font-weight:800; letter-spacing:-.02em }
-  .metric.alert .num { color:var(--red) }
-
-  .track-row { background:var(--card); border:1px solid var(--line); border-radius:12px;
-    padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:.15s }
-  .track-row:hover { border-color:var(--blue) }
-  .track-row.stale { border-left:3px solid var(--red) }
-  .track-row .top { display:flex; align-items:center; gap:9px; margin-bottom:8px; flex-wrap:wrap }
-  .track-row h4 { font-size:14px; font-weight:700; letter-spacing:-.01em; flex:1 }
-  .prio { font-size:11px; font-weight:700; padding:2px 8px; border-radius:5px; white-space:nowrap }
-  .prio.hi { background:var(--red-bg); color:var(--red) }
-  .prio.mid { background:var(--amber-bg); color:var(--amber) }
-  .track-meta { display:flex; align-items:center; gap:12px; font-size:12px; color:var(--muted) }
-  .stale-tag { color:var(--red); font-weight:700; margin-left:auto; white-space:nowrap }
-
-  /* 댓글 */
-  .cmt-toggle { margin-top:10px; font-size:12px; color:var(--blue); font-weight:600;
-    display:inline-flex; align-items:center; gap:5px; cursor:pointer }
-  .comments { display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--line2) }
-  .track-row.open .comments { display:block }
-  .cmt { margin-bottom:10px }
-  .cmt-head { display:flex; align-items:center; gap:8px; margin-bottom:2px }
-  .cmt-name { font-size:12px; font-weight:700 }
-  .cmt-date { font-size:11px; color:var(--faint) }
-  .cmt-body { font-size:13px; color:var(--ink); line-height:1.55 }
-  .cmt-input { display:flex; gap:7px; margin-top:11px }
-  .cmt-input input { flex:1; border:1px solid var(--line); border-radius:8px; padding:8px 11px;
-    font-family:inherit; font-size:13px; background:#FCFBF8; color:var(--ink) }
-  .cmt-input input:focus { outline:none; border-color:var(--blue) }
-  .cmt-input button { border:none; background:var(--accent); color:#fff; border-radius:8px;
-    padding:0 14px; font-family:inherit; font-weight:700; font-size:13px; cursor:pointer }
-
-  /* 사이드 패널 */
-  .live-row { display:flex; gap:9px; padding:9px 0; border-bottom:1px solid var(--line2) }
-  .live-row:last-child { border:none; padding-bottom:0 }
-  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); margin-top:5px; flex-shrink:0 }
-  .live-dot.gray { background:var(--faint) }
-  .live-row .txt { font-size:12.5px; line-height:1.45 }
-  .live-row .t { font-size:11px; color:var(--faint); margin-top:2px }
-
-  /* 토스트 */
-  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--accent); color:#fff; padding:11px 22px; border-radius:10px;
-    font-weight:600; font-size:13.5px; opacity:0; transition:.3s; pointer-events:none; z-index:999 }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0) }
-
-  @media(max-width:860px) {
-    .grid2, .layout, .metrics { grid-template-columns:1fr 1fr }
-  }
-  @media(max-width:560px) {
-    .grid2, .layout, .metrics { grid-template-columns:1fr }
-  }
+@media(max-width:860px){
+  .grid2,.layout,.brief-layout,.pro-grid{grid-template-columns:1fr}
+  .metrics,.brief-grid{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="topbar">
-    <div class="logo">
-      <div class="logo-dot"></div>
-      블록미디어 인텔리전스
-      <small>취재노트 DB · 내부용</small>
-    </div>
-    <nav>
-      <button class="tab on" data-s="input"><span class="n">1</span> 입력 · 취재관리</button>
-      <button class="tab" data-s="queue"><span class="n">2</span> 팔로업 큐</button>
-    </nav>
-  </div>
-  <div class="flowhint">핵심 흐름 &nbsp;·&nbsp; 메모 한 번 입력 → <b>AI 자동 구조화</b> → Supabase 저장 → 취재 큐 반영</div>
+<div class="wrap">
+<div class="topbar">
+  <div class="logo"><span class="dot"></span>블록미디어 인텔리전스 <small>내부용</small></div>
+  <nav>
+    <button class="tab on" data-s="input"><span class="n">1</span> 입력 · 취재관리</button>
+    <button class="tab" data-s="entity"><span class="n">2</span> 엔티티</button>
+    <button class="tab" data-s="brief"><span class="n">3</span> 브리핑</button>
+    <button class="tab" data-s="pro"><span class="n">4</span> 프로 (기관)</button>
+  </nav>
+</div>
+<div class="flowhint">핵심 흐름 &nbsp;·&nbsp; 기자가 <b>한 번 입력</b> → AI 구조화 → <b>여러 페이지에 자동 반영 (fan-out)</b></div>
+</div>
 </header>
 
-<!-- ══════════════ SCREEN 1: 입력 ══════════════ -->
+<!-- ══ SCREEN 1: 입력 · 취재관리 ══ -->
 <div class="screen on" id="input">
 <div class="wrap">
   <div class="scr-title">입력 · 취재 관리</div>
-  <div class="scr-sub">메모를 붙여넣으면 <b>Gemini가 자동 구조화</b>하고 Supabase에 저장됩니다.</div>
+  <div class="scr-sub">메모를 붙여넣으면 <b>AI가 자동 구조화</b>하고, 아래 취재 큐로 들어갑니다.</div>
 
-  <!-- 입력 패널 -->
-  <div class="panel" style="margin-bottom:18px">
-    <h3><span class="ico">✎</span> 취재 메모</h3>
-    <div class="source-row">
-      <button class="src-btn on" onclick="setSource('note', this)">✏️ 직접 취재 메모</button>
-      <button class="src-btn" onclick="setSource('press', this)">📨 보도자료</button>
-    </div>
-    <textarea id="memo" placeholder="포스트잇처럼 자유롭게 메모하세요.
+  <div class="grid2" style="margin-bottom:18px">
+    <!-- 입력 -->
+    <div class="panel">
+      <h3><span class="ico">✎</span> 취재 메모</h3>
+      <div class="src-row">
+        <button class="src-btn on" onclick="setSource('note',this)">✏️ 직접 취재</button>
+        <button class="src-btn" onclick="setSource('press',this)">📨 보도자료</button>
+      </div>
+      <textarea id="memo" placeholder="포스트잇처럼 자유롭게 메모하세요.
 예) [2026-05-26 단독] 하나금융과 Circle이 USDC MoU 체결.
 일본 EPI 시행(6/1)을 계기로 한국 진입 시나리오 부상.
 51% 룰 통과 시 Circle이 핵심 파트너될 것으로 업계 관측."></textarea>
-    <button class="btn-primary" id="runBtn" onclick="runAnalysis()">
-      <div class="spin" id="spin"></div>
-      <span id="btnTxt">✦ Gemini로 구조화하기</span>
-    </button>
-  </div>
+      <button class="btn-primary" id="runBtn" onclick="runAnalysis()">
+        <div class="spin" id="spin"></div>
+        <span id="btnTxt">✦ AI로 구조화하기</span>
+      </button>
+    </div>
 
-  <!-- 결과 패널: 구조화 후 아래에 펼쳐짐 -->
-  <div class="out" id="outState">
-    <div class="sec-h" style="margin-bottom:14px"><span class="auto-pill">AI</span> 자동 추출 결과</div>
-
-    <div class="grid2" style="margin-bottom:14px">
-      <!-- 엔티티 -->
-      <div class="panel">
-        <div class="ex-lbl">추출된 엔티티</div>
-        <div class="chips" id="entityChips"></div>
+    <!-- AI 결과 -->
+    <div class="panel">
+      <h3><span class="ico">⚡</span> AI 자동 추출 결과</h3>
+      <div id="emptyState" style="display:grid;place-items:center;min-height:220px;text-align:center;color:var(--faint)">
+        <div><div style="font-size:28px;opacity:.35;margin-bottom:8px">⌁</div><div style="font-size:13px">왼쪽에 메모를 입력하고<br>구조화 버튼을 누르세요</div></div>
       </div>
-      <!-- 태그 + 중요도 -->
-      <div class="panel">
-        <div class="ex-lbl" style="margin-bottom:8px">자동 태그</div>
-        <div class="chips" id="tagChips" style="margin-bottom:14px"></div>
-        <div class="ex-lbl" style="margin-bottom:6px">중요도</div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="stars" id="importanceStars"></span>
-          <span style="font-size:13px;color:var(--muted)" id="importanceReason"></span>
+      <div class="out" id="outState">
+        <div style="margin-bottom:14px">
+          <div class="ex-lbl" style="margin-bottom:8px">추출된 엔티티</div>
+          <div class="chips" id="entityChips"></div>
         </div>
+        <div style="margin-bottom:14px">
+          <div class="ex-lbl" style="margin-bottom:8px">추출된 이벤트</div>
+          <div id="eventList"></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="ex-lbl" style="margin-bottom:8px">자동 태그</div>
+          <div class="chips" id="tagChips"></div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="ex-lbl" style="margin-bottom:6px">중요도</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="stars" id="impStars"></span>
+            <span style="font-size:13px;color:var(--muted)" id="impReason"></span>
+          </div>
+        </div>
+        <div class="fanout">
+          <div class="ex-lbl" style="color:var(--blue);margin-bottom:10px">이 입력 한 건이 반영되는 페이지 →</div>
+          <div class="fan-list" id="fanList"></div>
+        </div>
+        <button class="save-btn" onclick="saveNote()">💾 Supabase에 저장하기</button>
       </div>
     </div>
-
-    <!-- 이벤트 -->
-    <div class="panel" style="margin-bottom:14px">
-      <div class="ex-lbl" style="margin-bottom:10px">추출된 이벤트</div>
-      <div id="eventList"></div>
-    </div>
-
-    <!-- 파생 취재 각도 -->
-    <div class="panel" style="margin-bottom:18px">
-      <div class="ex-lbl" style="color:var(--blue);margin-bottom:10px">파생 취재 각도</div>
-      <div class="fan-list" id="fanList"></div>
-    </div>
-
-    <button class="save-btn show" id="saveBtn" onclick="saveToSupabase()">
-      💾 Supabase에 저장하기
-    </button>
   </div>
 
-</div>
-</div>
-
-<!-- ══════════════ SCREEN 2: 팔로업 큐 ══════════════ -->
-<div class="screen" id="queue">
-<div class="wrap">
-  <div class="scr-title">팔로업 큐</div>
-  <div class="scr-sub">저장된 취재노트가 상태·중요도순으로 쌓입니다. <b>클릭하면 메모 스레드</b>를 추가할 수 있어요.</div>
-
+  <!-- 취재 큐 -->
+  <div class="sec-h" style="margin-bottom:14px">취재 · 팔로업 관리 <span class="auto-pill">입력하면 여기로 들어옵니다</span></div>
   <div class="metrics">
     <div class="metric"><div class="lbl">🔵 취재 진행중</div><div class="num" id="cnt-following">—</div></div>
-    <div class="metric"><div class="lbl">📥 인박스</div><div class="num" id="cnt-inbox">—</div></div>
+    <div class="metric"><div class="lbl">🟡 검증 대기</div><div class="num" id="cnt-inbox">—</div></div>
     <div class="metric alert"><div class="lbl">🔴 팔로업 필요</div><div class="num" id="cnt-stale">—</div></div>
     <div class="metric"><div class="lbl">✓ 완료</div><div class="num" id="cnt-done">—</div></div>
   </div>
 
-  <div class="layout">
+  <div style="display:grid;grid-template-columns:1fr 290px;gap:18px;align-items:start">
     <div>
-      <div class="sec-h">전체 노트 <span class="auto-pill">최신순</span></div>
-      <div id="queueList">
-        <div style="color:var(--faint);font-size:13px;padding:20px 0">로딩 중...</div>
-      </div>
+      <div class="sec-h">팔로업 큐 <span class="auto-pill">상태 · 최신순</span></div>
+      <div id="queueList"><div style="color:var(--faint);font-size:13px;padding:20px 0">로딩 중...</div></div>
     </div>
-
     <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="sec-h" style="margin-bottom:13px">방치된 건 <span class="auto-pill" style="background:var(--red-bg);color:var(--red)">자동 감지</span></div>
+        <div id="staleList"><div style="color:var(--faint);font-size:12.5px">없음</div></div>
+        <div style="font-size:11.5px;color:var(--faint);margin-top:11px;line-height:1.5">3일 이상 업데이트 없는 건을 자동으로 끌어올립니다.</div>
+      </div>
       <div class="panel">
         <div class="sec-h" style="margin-bottom:13px">최근 저장 <span class="auto-pill">실시간</span></div>
-        <div id="recentList">
-          <div style="color:var(--faint);font-size:12.5px">저장된 노트가 없습니다</div>
+        <div id="recentList"><div style="color:var(--faint);font-size:12.5px">저장된 노트가 없습니다</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SCREEN 2: 엔티티 ══ -->
+<div class="screen" id="entity">
+<div class="wrap">
+  <div class="scr-title">엔티티 페이지 (자동 구성)</div>
+  <div class="scr-sub">저장된 노트에서 추출된 엔티티를 선택하면 <b>타임라인이 자동으로 구성</b>됩니다.</div>
+
+  <!-- 엔티티 선택 -->
+  <div class="panel" style="margin-bottom:18px">
+    <div class="sec-h" style="margin-bottom:11px">엔티티 선택</div>
+    <div class="chips" id="entitySelector" style="gap:8px"><div style="color:var(--faint);font-size:13px">노트를 저장하면 엔티티가 여기 나타납니다</div></div>
+  </div>
+
+  <div id="entityDetail" style="display:none">
+    <div class="ent-head">
+      <div class="ent-top">
+        <div class="ent-ico" id="entIco">?</div>
+        <div>
+          <div class="ent-name" id="entName">—</div>
+        </div>
+      </div>
+      <div class="ent-tags" id="entTags"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start">
+      <div>
+        <div class="sec-h">시계열 타임라인 <span class="auto-pill">DB 자동 구성</span></div>
+        <div id="timelineList"></div>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:14px">
+          <div class="sec-h" style="margin-bottom:13px">연결된 엔티티 <span class="auto-pill">관계도</span></div>
+          <div id="relatedList"></div>
+        </div>
+        <div class="panel">
+          <div class="sec-h" style="margin-bottom:13px">노출 범위</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;font-weight:600">
+            <div style="display:flex;justify-content:space-between"><span>취재노트 DB</span><span style="color:var(--green)">전체</span></div>
+            <div style="display:flex;justify-content:space-between"><span>브리핑 피드</span><span style="color:var(--amber)">중요도 4↑</span></div>
+            <div style="display:flex;justify-content:space-between"><span>프로 구독</span><span style="color:var(--blue)">전체</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -303,54 +358,125 @@
 </div>
 </div>
 
-<!-- 토스트 -->
+<!-- ══ SCREEN 3: 브리핑 ══ -->
+<div class="screen" id="brief">
+<div class="wrap">
+  <div class="scr-title">Today's Brief · 브리핑</div>
+  <div class="scr-sub">저장된 노트에서 <b>중요도 높은 것만 자동으로 구성</b>됩니다.</div>
+
+  <div class="searchbar">
+    <span style="color:var(--faint)">🔍</span>
+    <input id="searchInput" placeholder="엔티티 · 이벤트 · 키워드 검색 (예: USDC, 하나금융)" oninput="filterFeed()">
+    <span class="kbd">⌘K</span>
+  </div>
+
+  <div class="sec-h" id="briefDateLabel" style="margin-bottom:14px">Today's Brief</div>
+  <div class="brief-grid" id="briefCards"></div>
+
+  <div class="brief-layout">
+    <div>
+      <div class="sec-h">Live Feed <span class="auto-pill">최신순</span></div>
+      <div id="feedList"></div>
+    </div>
+    <div>
+      <div class="ask">
+        <h3>Ask AI</h3>
+        <div class="q">💬 <input id="askInput" placeholder="질문하세요..." style="background:none;border:none;font-family:inherit;font-size:13px;color:#fff;flex:1;outline:none;width:100%" onkeydown="if(event.key==='Enter')askAI()"></div>
+        <div class="ans-l" id="askLabel" style="display:none">AI 답변</div>
+        <ul class="ans" id="askAns"></ul>
+        <div class="acts">
+          <div class="act" onclick="askPreset('오늘 주요 이슈 정리해줘')">📄 오늘 주요 이슈 정리</div>
+          <div class="act" onclick="askPreset('팔로업 필요한 건 뭐야')">⚠️ 팔로업 필요 건</div>
+          <div class="act" onclick="askPreset('중요도 5점짜리만 보여줘')">⭐ 중요도 최상위만</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SCREEN 4: 프로 ══ -->
+<div class="screen" id="pro">
+<div class="wrap">
+  <div class="scr-title">프로 페이지 (기관 구독자)</div>
+  <div class="scr-sub">규제 레이더 · 워치리스트 · 주간 브리프. <b>뉴스가 아니라 확신을 팝니다.</b></div>
+
+  <div class="pro-banner">
+    <span class="pro-tag">PRO</span>
+    <div><div class="bt">블록미디어 인텔리전스 · 기관 구독</div><div class="bs">규제 레이더 · 워치리스트 알림 · 데이터 · 주간 브리프</div></div>
+  </div>
+
+  <div class="pro-grid">
+    <div>
+      <div class="sec-h" style="margin-bottom:13px">규제 · 정책 레이더 <span class="auto-pill">취재노트 자동 집계</span></div>
+      <div id="radarList"></div>
+
+      <div class="sec-h" style="margin-top:22px;margin-bottom:13px">중요도 최상위 픽 <span class="auto-pill">★★★★★</span></div>
+      <div class="panel" id="topPickList"></div>
+    </div>
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="sec-h" style="margin-bottom:13px">워치리스트 <span class="auto-pill">알림</span></div>
+        <div id="watchList"></div>
+        <div style="font-size:11.5px;color:var(--faint);margin-top:12px;line-height:1.5">등록 엔티티에 움직임 발생 시 즉시 알림</div>
+      </div>
+      <div class="panel">
+        <div class="sec-h" style="margin-bottom:13px">주간 기관 브리프</div>
+        <button class="dl-btn">📄 이번주 브리프 PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════
-//  🔑 키 설정 — 여기에 직접 입력하세요
-// ══════════════════════════════════════════
-const SUPABASE_URL  = 'https://xiyojjywtcwiymibmszr.supabase.co';
-const SUPABASE_KEY  = 'sb_publishable_RQGUYA-vTnhk3uT1kr8zlA_zwlDbo8i';
-// ══════════════════════════════════════════
+// ── 설정 ──
+const SUPABASE_URL = 'https://xiyojjywtcwiymibmszr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_RQGUYA-vTnhk3uT1kr8zlA_zwlDbo8i';
+const H = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 
 let currentSource = 'note';
 let currentResult = null;
+let allNotes = [];
 
-// 탭 전환
-const tabs    = [...document.querySelectorAll('.tab')];
+// ── 탭 ──
+const tabs = [...document.querySelectorAll('.tab')];
 const screens = [...document.querySelectorAll('.screen')];
 function go(id) {
   tabs.forEach(t => t.classList.toggle('on', t.dataset.s === id));
   screens.forEach(s => s.classList.toggle('on', s.id === id));
-  if (id === 'queue') loadQueue();
-  window.scrollTo({ top:0, behavior:'smooth' });
+  if (id === 'input') loadQueue();
+  if (id === 'entity') loadEntitySelector();
+  if (id === 'brief') loadBrief();
+  if (id === 'pro') loadPro();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 tabs.forEach(t => t.onclick = () => go(t.dataset.s));
 
-// 소스 선택
 function setSource(type, el) {
   currentSource = type;
   document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('on'));
   el.classList.add('on');
 }
 
-// 로딩 상태
+// ── 로딩 ──
 function setLoading(on) {
   document.getElementById('runBtn').disabled = on;
   document.getElementById('spin').style.display = on ? 'block' : 'none';
-  document.getElementById('btnTxt').textContent = on ? 'Gemini 분석 중...' : '✦ Gemini로 구조화하기';
+  document.getElementById('btnTxt').textContent = on ? 'AI 분석 중...' : '✦ AI로 구조화하기';
 }
 
-// 토스트
-function showToast(msg, duration = 2500) {
+// ── 토스트 ──
+function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), duration);
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ── Gemini 호출 ──
+// ── Gemini (Edge Function) ──
 async function runAnalysis() {
   const text = document.getElementById('memo').value.trim();
   if (!text) { alert('메모를 먼저 입력해주세요.'); return; }
@@ -358,15 +484,14 @@ async function runAnalysis() {
   setLoading(true);
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('outState').classList.remove('show');
-  document.getElementById('saveBtn').classList.remove('show');
   currentResult = null;
 
   const prompt = `다음 취재 메모를 분석해 JSON만 반환하세요. 마크다운 없이 순수 JSON만.
 
 {
   "entities": [{"type":"조직|인물|토큰|법령","name":"이름"}],
-  "events": [{"status":"확정|전망|루머","title":"이벤트 제목","date":"날짜(없으면 null)","reliability":1~5}],
-  "tags": ["태그1","태그2"],
+  "events": [{"status":"확정|전망|루머","title":"이벤트 제목","date":"날짜 또는 null","reliability":1~5}],
+  "tags": ["태그1","태그2","태그3"],
   "summary_ko": "2문장 이내 요약",
   "importance_score": 1~5,
   "importance_reason": "판단 근거 한 줄",
@@ -377,22 +502,15 @@ async function runAnalysis() {
 ${text}`;
 
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/gemini-proxy`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`
-        },
-        body: JSON.stringify({ prompt })
-      }
-    );
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/gemini-proxy`, {
+      method: 'POST',
+      headers: H,
+      body: JSON.stringify({ prompt })
+    });
     if (!res.ok) throw new Error(`Edge Function 오류 ${res.status}`);
     const data = await res.json();
-    const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const clean = raw.replace(/```json|```/g,'').trim();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
     currentResult = JSON.parse(clean);
     renderResult(currentResult);
   } catch(e) {
@@ -403,254 +521,382 @@ ${text}`;
   }
 }
 
-// ── 결과 렌더링 ──
 function renderResult(d) {
-  // 엔티티
-  document.getElementById('entityChips').innerHTML =
-    (d.entities||[]).map(e =>
-      `<span class="chip"><span class="k">${e.type}</span>${e.name}</span>`
-    ).join('');
-
-  // 이벤트
   const statusClass = { '확정':'g', '전망':'a', '루머':'n' };
+  const icons = ['📄','🏢','📰','🔍'];
+
+  document.getElementById('entityChips').innerHTML =
+    (d.entities||[]).map(e => `<span class="chip"><span class="k">${e.type}</span>${e.name}</span>`).join('');
+
   document.getElementById('eventList').innerHTML =
     (d.events||[]).map(ev => `
       <div class="ev-row">
-        <div class="top">
-          <span class="bdg ${statusClass[ev.status]||'n'}">${ev.status}</span>
-          <span class="ttl">${ev.title}</span>
-        </div>
+        <div class="top"><span class="bdg ${statusClass[ev.status]||'n'}">${ev.status}</span><span class="ttl">${ev.title}</span></div>
         <div class="meta">${ev.date||'날짜 미상'} · 신뢰도 ${'★'.repeat(ev.reliability||3)}${'☆'.repeat(5-(ev.reliability||3))}</div>
-      </div>`
-    ).join('');
+      </div>`).join('');
 
-  // 태그
   document.getElementById('tagChips').innerHTML =
     (d.tags||[]).map(t => `<span class="chip">${t}</span>`).join('');
 
-  // 중요도
   const sc = Math.min(5, Math.max(1, d.importance_score||3));
-  document.getElementById('importanceStars').textContent = '★'.repeat(sc) + '☆'.repeat(5-sc);
-  document.getElementById('importanceReason').textContent = d.importance_reason||'';
+  document.getElementById('impStars').textContent = '★'.repeat(sc) + '☆'.repeat(5-sc);
+  document.getElementById('impReason').textContent = d.importance_reason || '';
 
-  // 파생 취재 각도
-  const icons = ['📰','🔍','📊'];
   document.getElementById('fanList').innerHTML =
     (d.follow_angles||[]).map((a,i) => `
-      <div class="fan-item">
-        <span>${icons[i%3]}</span>
-        <span>${a}</span>
+      <div class="fan-item" onclick="go('entity')">
+        ${icons[i%4]} ${a}
+        <span class="tag">엔티티 페이지 반영</span>
         <span class="arrow">→</span>
-      </div>`
-    ).join('');
+      </div>`).join('');
 
   document.getElementById('outState').classList.add('show');
-  document.getElementById('saveBtn').classList.add('show');
 }
 
 // ── Supabase 저장 ──
-async function saveToSupabase() {
+async function saveNote() {
   if (!currentResult) return;
-  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') { alert('SUPABASE_URL을 설정해주세요.'); return; }
-
   const content = document.getElementById('memo').value.trim();
   const payload = {
-    content,
-    source_type:      currentSource,
-    entities:         currentResult.entities || [],
-    events:           currentResult.events || [],
-    tags:             currentResult.tags || [],
-    summary_ko:       currentResult.summary_ko || '',
+    content, source_type: currentSource,
+    entities: currentResult.entities || [],
+    events: currentResult.events || [],
+    tags: currentResult.tags || [],
+    summary_ko: currentResult.summary_ko || '',
     importance_score: currentResult.importance_score || 3,
-    follow_angles:    currentResult.follow_angles || [],
-    status:           'inbox',
-    notes_thread:     []
+    follow_angles: currentResult.follow_angles || [],
+    status: 'inbox', notes_thread: []
   };
-
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/press_notes`, {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'apikey':        SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer':        'return=minimal'
-      },
+      method: 'POST', headers: { ...H, 'Prefer': 'return=minimal' },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `HTTP ${res.status}`);
-    }
-    showToast('✓ Supabase에 저장되었습니다');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('✓ 저장되었습니다');
     document.getElementById('memo').value = '';
     document.getElementById('outState').classList.remove('show');
+    document.getElementById('emptyState').style.display = 'grid';
     currentResult = null;
-  } catch(e) {
-    alert('저장 실패: ' + e.message);
-  }
+    loadQueue();
+  } catch(e) { alert('저장 실패: ' + e.message); }
 }
 
 // ── 큐 로드 ──
 async function loadQueue() {
-  const h = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
-
   try {
-    // 두 테이블 병렬 호출
     const [notesRes, pressRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=*&order=created_at.desc&limit=50`, { headers: h }),
-      fetch(`${SUPABASE_URL}/rest/v1/press_structured?select=*&order=parsed_at.desc&limit=50`, { headers: h })
+      fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=*&order=created_at.desc&limit=50`, { headers: H }),
+      fetch(`${SUPABASE_URL}/rest/v1/press_structured?select=*&order=parsed_at.desc&limit=30`, { headers: H })
     ]);
     const notes = await notesRes.json();
     const press = await pressRes.json();
+    allNotes = notes;
 
-    // press_structured → 통일 포맷으로 변환
     const pressNorm = press.map(p => ({
-      id:              p.id,
-      _table:          'press',
-      created_at:      p.parsed_at,
-      summary_ko:      p.summary_ko || p.title,
-      source_type:     'press',
-      status:          'inbox',
-      importance_score: p.importance_score || 0,
-      tags:            Array.isArray(p.keywords) ? p.keywords : (p.keywords ? Object.values(p.keywords) : []),
-      company:         p.company,
-      category:        p.category,
-      notes_thread:    []
+      id: p.id, _table: 'press', created_at: p.parsed_at,
+      summary_ko: p.summary_ko || p.title, source_type: 'press',
+      status: 'inbox', importance_score: p.importance_score || 0,
+      tags: Array.isArray(p.keywords) ? p.keywords : [],
+      company: p.company, category: p.category, notes_thread: []
     }));
-
-    // press_notes → 통일 포맷
     const notesNorm = notes.map(n => ({ ...n, _table: 'note' }));
+    const all = [...notesNorm, ...pressNorm].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
 
-    // 합치고 날짜순 정렬
-    const all = [...notesNorm, ...pressNorm].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-
-    // 카운트 (press_notes 기준)
+    // 카운트
     const counts = { inbox:0, following:0, stale:0, done:0 };
-    notesNorm.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
-    document.getElementById('cnt-inbox').textContent      = counts.inbox;
-    document.getElementById('cnt-following').textContent  = counts.following;
-    document.getElementById('cnt-stale').textContent      = counts.stale;
-    document.getElementById('cnt-done').textContent       = counts.done;
+    notesNorm.forEach(r => { if(counts[r.status]!==undefined) counts[r.status]++; });
+    document.getElementById('cnt-following').textContent = counts.following;
+    document.getElementById('cnt-inbox').textContent = counts.inbox;
+    document.getElementById('cnt-stale').textContent = counts.stale;
+    document.getElementById('cnt-done').textContent = counts.done;
 
-    const statusLabel = { inbox:'인박스', following:'취재중', stale:'팔로업 필요', done:'완료' };
-    const statusClass = { inbox:'b', following:'b', stale:'r', done:'n' };
-    const prioClass   = s => s >= 4 ? 'hi' : s >= 3 ? 'mid' : '';
-
-    document.getElementById('queueList').innerHTML = all.length === 0
-      ? '<div style="color:var(--faint);font-size:13px;padding:16px 0">데이터가 없습니다.</div>'
-      : all.map(r => {
-          const date = new Date(r.created_at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'});
-          const tags = (r.tags||[]).slice(0,3).map(t=>`<span class="chip" style="font-size:11px">${t}</span>`).join('');
-          const isNote = r._table === 'note';
-          const isStale = r.status === 'stale';
-          const srcLabel = isNote ? '✏️ 직접취재' : '📨 보도자료';
-          const srcColor = isNote ? 'var(--green-bg)' : 'var(--blue-bg)';
-          const srcInk   = isNote ? 'var(--green)' : 'var(--blue)';
-          const title    = r.summary_ko || (r.content ? r.content.slice(0,60)+'...' : r.company || '—');
-
-          // 보도자료는 댓글 없음, 취재노트만 댓글 가능
-          const commentSection = isNote ? `
-              <div class="cmt-toggle">💬 메모 추가 <span style="font-size:10px">▾</span></div>
-              <div class="comments">
-                <div class="cmt-input">
-                  <input type="text" placeholder="팔로업 메모..." onkeydown="if(event.key==='Enter')addComment(this,'${r.id}')">
-                  <button onclick="addComment(this.previousElementSibling,'${r.id}')">추가</button>
-                </div>
-                <div class="cmt-list" id="cmt-${r.id}">
-                  ${(r.notes_thread||[]).map(c=>`
-                    <div class="cmt">
-                      <div class="cmt-head"><span class="cmt-name">${c.author||'나'}</span><span class="cmt-date">${c.date||''}</span></div>
-                      <div class="cmt-body">${c.text}</div>
-                    </div>`).join('')}
-                </div>
-              </div>` : '';
-
-          return `
-            <div class="track-row ${isStale?'stale':''}" onclick="toggleComment(this)">
-              <div class="top">
-                <span class="bdg ${statusClass[r.status]||'n'}">${isNote ? (statusLabel[r.status]||r.status) : (r.category||'보도자료')}</span>
-                <h4>${title}</h4>
-                ${r.importance_score >= 3 ? `<span class="prio ${prioClass(r.importance_score)}">${'★'.repeat(r.importance_score)}</span>` : ''}
-              </div>
-              <div class="track-meta">
-                <span style="font-size:11px;background:${srcColor};color:${srcInk};padding:2px 7px;border-radius:5px;font-weight:600">${srcLabel}</span>
-                ${r.company ? `<span style="font-size:12px;font-weight:600">${r.company}</span>` : ''}
-                <span style="display:flex;gap:5px">${tags}</span>
-                <span style="margin-left:auto;font-size:11.5px;color:var(--faint)">${date}</span>
-              </div>
-              ${commentSection}
-            </div>`;
+    // 방치 건
+    const now = Date.now();
+    const stale = notesNorm.filter(r => {
+      const days = (now - new Date(r.created_at)) / 86400000;
+      return days >= 3 && r.status !== 'done';
+    });
+    document.getElementById('staleList').innerHTML = stale.length === 0
+      ? '<div style="color:var(--faint);font-size:12.5px">없음</div>'
+      : stale.map(r => {
+          const days = Math.floor((now - new Date(r.created_at)) / 86400000);
+          return `<div class="stale-item">${(r.summary_ko||r.content||'').slice(0,20)}... <span>· ${days}일</span></div>`;
         }).join('');
 
-    // 최근 저장 (사이드 — 취재노트만)
-    document.getElementById('recentList').innerHTML = notesNorm.slice(0,5).length === 0
-      ? '<div style="color:var(--faint);font-size:12.5px">저장된 노트가 없습니다</div>'
-      : notesNorm.slice(0,5).map(r => {
-          const t = new Date(r.created_at).toLocaleTimeString('ko-KR',{hour:'numeric',minute:'numeric'});
-          return `
-            <div class="live-row">
-              <div class="live-dot"></div>
-              <div>
-                <div class="txt">${r.summary_ko || r.content?.slice(0,40)+'...'}</div>
-                <div class="t">${t} · 직접취재</div>
+    // 최근 저장
+    document.getElementById('recentList').innerHTML = notesNorm.slice(0,5).map(r => {
+      const t = new Date(r.created_at).toLocaleTimeString('ko-KR',{hour:'numeric',minute:'numeric'});
+      return `<div class="live-row"><div class="live-dot"></div><div><div class="txt">${(r.summary_ko||r.content||'').slice(0,35)}...</div><div class="t">${t}</div></div></div>`;
+    }).join('') || '<div style="color:var(--faint);font-size:12.5px">없음</div>';
+
+    // 큐 렌더
+    const statusLabel = { inbox:'검증 대기', following:'취재중', stale:'팔로업 필요', done:'완료' };
+    const statusClass = { inbox:'a', following:'b', stale:'r', done:'n' };
+    const prioClass = s => s >= 4 ? 'hi' : s >= 3 ? 'mid' : '';
+
+    document.getElementById('queueList').innerHTML = all.length === 0
+      ? '<div style="color:var(--faint);font-size:13px;padding:20px 0">데이터가 없습니다.</div>'
+      : all.map(r => {
+          const date = new Date(r.created_at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'});
+          const isNote = r._table === 'note';
+          const isStale = (Date.now()-new Date(r.created_at))/86400000 >= 3 && r.status !== 'done';
+          const tags = (r.tags||[]).slice(0,3).map(t=>`<span class="chip" style="font-size:11px">${t}</span>`).join('');
+          const title = r.summary_ko || (r.content||'').slice(0,60)+'...' || r.company || '—';
+          const srcLabel = isNote ? '✏️ 직접취재' : '📨 보도자료';
+          const srcColor = isNote ? 'var(--green-bg)' : 'var(--blue-bg)';
+          const srcInk = isNote ? 'var(--green)' : 'var(--blue)';
+
+          const cmtSection = isNote ? `
+            <div class="cmt-toggle" onclick="event.stopPropagation();this.closest('.track-row').classList.toggle('open')">
+              💬 메모 추가 <span style="font-size:10px">▾</span>
+            </div>
+            <div class="comments">
+              <div class="cmt-input">
+                <input type="text" placeholder="팔로업 메모..." onkeydown="if(event.key==='Enter')addComment(this,'${r.id}')">
+                <button onclick="addComment(this.previousElementSibling,'${r.id}')">추가</button>
               </div>
-            </div>`;
+              <div id="cmt-${r.id}">
+                ${(r.notes_thread||[]).map(c=>`<div class="cmt"><div class="cmt-head"><span class="cmt-name">${c.author||'나'}</span><span class="cmt-date">${c.date||''}</span></div><div class="cmt-body">${c.text}</div></div>`).join('')}
+              </div>
+            </div>` : '';
+
+          return `<div class="track-row ${isStale?'stale':''}">
+            <div class="top">
+              <span class="bdg ${statusClass[r.status]||'n'}">${isNote?(statusLabel[r.status]||r.status):(r.category||'보도자료')}</span>
+              <h4>${title}</h4>
+              ${r.importance_score>=3?`<span class="prio ${prioClass(r.importance_score)}">${'★'.repeat(r.importance_score)}</span>`:''}
+            </div>
+            <div class="track-meta">
+              <span style="font-size:11px;background:${srcColor};color:${srcInk};padding:2px 7px;border-radius:5px;font-weight:600">${srcLabel}</span>
+              ${r.company?`<span style="font-size:12px;font-weight:600">${r.company}</span>`:''}
+              <span style="display:flex;gap:5px">${tags}</span>
+              ${isStale?`<span class="stale-tag">⚠ 오래된 건</span>`:`<span style="margin-left:auto;font-size:11.5px;color:var(--faint)">${date}</span>`}
+            </div>
+            ${cmtSection}
+          </div>`;
         }).join('');
 
   } catch(e) {
-    document.getElementById('queueList').innerHTML =
-      `<div style="color:var(--red);font-size:13px;padding:16px 0">로드 실패: ${e.message}</div>`;
+    document.getElementById('queueList').innerHTML = `<div style="color:var(--red);font-size:13px;padding:20px 0">로드 실패: ${e.message}</div>`;
   }
 }
 
-// 댓글 토글
-function toggleComment(el) {
-  el.classList.toggle('open');
-}
-
-// 댓글 추가
+// ── 댓글 추가 ──
 async function addComment(input, noteId) {
   const text = input.value.trim();
   if (!text) return;
-
   const now = new Date();
   const date = `${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  const newComment = { author:'나', text, date };
-
   try {
-    // 기존 thread 가져오기
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/press_notes?id=eq.${noteId}&select=notes_thread`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-    );
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/press_notes?id=eq.${noteId}&select=notes_thread`, { headers: H });
     const rows = await res.json();
-    const thread = [...(rows[0]?.notes_thread || []), newComment];
-
-    // 업데이트
+    const thread = [...(rows[0]?.notes_thread||[]), { author:'나', text, date }];
     await fetch(`${SUPABASE_URL}/rest/v1/press_notes?id=eq.${noteId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type':  'application/json',
-        'apikey':        SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`
-      },
-      body: JSON.stringify({ notes_thread: thread })
+      method: 'PATCH', headers: H, body: JSON.stringify({ notes_thread: thread })
     });
-
-    // UI 업데이트
-    const cmt = document.createElement('div');
-    cmt.className = 'cmt';
-    cmt.innerHTML = `<div class="cmt-head"><span class="cmt-name">${newComment.author}</span><span class="cmt-date">${date}</span></div><div class="cmt-body">${text}</div>`;
-    document.getElementById(`cmt-${noteId}`).appendChild(cmt);
+    const el = document.createElement('div');
+    el.className = 'cmt';
+    el.innerHTML = `<div class="cmt-head"><span class="cmt-name">나</span><span class="cmt-date">${date}</span></div><div class="cmt-body">${text}</div>`;
+    document.getElementById(`cmt-${noteId}`).appendChild(el);
     input.value = '';
     showToast('✓ 메모 추가됨');
+  } catch(e) { alert('저장 실패: ' + e.message); }
+}
+
+// ── 엔티티 페이지 ──
+async function loadEntitySelector() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=entities&order=created_at.desc&limit=100`, { headers: H });
+    const rows = await res.json();
+    const entMap = {};
+    rows.forEach(r => (r.entities||[]).forEach(e => { entMap[e.name] = e; }));
+    const ents = Object.values(entMap);
+    document.getElementById('entitySelector').innerHTML = ents.length === 0
+      ? '<div style="color:var(--faint);font-size:13px">노트를 저장하면 엔티티가 여기 나타납니다</div>'
+      : ents.map(e => `<span class="chip" style="cursor:pointer" onclick="loadEntityDetail('${e.name}','${e.type}')"><span class="k">${e.type}</span>${e.name}</span>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function loadEntityDetail(name, type) {
+  document.getElementById('entityDetail').style.display = 'block';
+  document.getElementById('entIco').textContent = name.slice(0,1);
+  document.getElementById('entName').innerHTML = `${name} <span>${type}</span>`;
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=*&order=created_at.desc&limit=100`, { headers: H });
+    const rows = await res.json();
+    const related = rows.filter(r => (r.entities||[]).some(e => e.name === name));
+
+    // 태그
+    const allTags = [...new Set(related.flatMap(r => r.tags||[]))].slice(0,6);
+    document.getElementById('entTags').innerHTML = allTags.map(t=>`<span class="bdg n">${t}</span>`).join('');
+
+    // 타임라인
+    const statusClass = { '확정':'g', '전망':'a', '루머':'n' };
+    document.getElementById('timelineList').innerHTML = related.length === 0
+      ? '<div style="color:var(--faint);font-size:13px">관련 노트가 없습니다</div>'
+      : related.map((r,i) => {
+          const date = new Date(r.created_at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
+          const events = r.events || [];
+          const ev = events[0];
+          return `<div class="tl-item ${i===0?'fresh':''}">
+            <div class="top">
+              ${ev?`<span class="bdg ${statusClass[ev.status]||'n'}">${ev.status}</span>`:'<span class="bdg n">메모</span>'}
+              <span class="date">${i===0?'최신 · ':''} ${date}</span>
+            </div>
+            <h4>${ev?ev.title:(r.summary_ko||'').slice(0,40)}</h4>
+            <p>${r.summary_ko||''}</p>
+            <div class="src">${r.source_type==='note'?'✎ 직접취재':'✓ 보도자료'}</div>
+          </div>`;
+        }).join('');
+
+    // 연결 엔티티
+    const relMap = {};
+    related.forEach(r => (r.entities||[]).forEach(e => { if(e.name!==name) relMap[e.name]=e; }));
+    const relEnts = Object.values(relMap).slice(0,6);
+    document.getElementById('relatedList').innerHTML = relEnts.length === 0
+      ? '<div style="color:var(--faint);font-size:12.5px">없음</div>'
+      : relEnts.map(e => `<div class="rel-row"><span class="rel-ico">${e.name.slice(0,1)}</span>${e.name}<span style="margin-left:auto;font-size:11px;color:var(--faint);font-weight:600">${e.type}</span></div>`).join('');
+
+  } catch(e) { console.error(e); }
+}
+
+// ── 브리핑 ──
+let allFeed = [];
+async function loadBrief() {
+  const today = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('briefDateLabel').innerHTML = `Today's Brief · ${today} <span class="auto-pill">자동 구성</span>`;
+
+  try {
+    const [notesRes, pressRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=*&order=importance_score.desc,created_at.desc&limit=50`, { headers: H }),
+      fetch(`${SUPABASE_URL}/rest/v1/press_structured?select=*&order=importance_score.desc,parsed_at.desc&limit=20`, { headers: H })
+    ]);
+    const notes = await notesRes.json();
+    const press = await pressRes.json();
+    const pressNorm = press.map(p => ({
+      id:p.id, summary_ko:p.summary_ko||p.title, source_type:'press',
+      importance_score:p.importance_score||0, tags:Array.isArray(p.keywords)?p.keywords:[],
+      events:[], created_at:p.parsed_at, company:p.company
+    }));
+    allFeed = [...notes, ...pressNorm].sort((a,b) => (b.importance_score||0)-(a.importance_score||0));
+
+    // Brief 카드 (상위 3개)
+    const statusClass = { '확정':'g', '전망':'a', '루머':'n' };
+    const top3 = allFeed.slice(0,3);
+    document.getElementById('briefCards').innerHTML = top3.map(r => {
+      const ev = (r.events||[])[0];
+      const sc = r.importance_score||0;
+      return `<div class="brief-card">
+        <div class="top">
+          ${ev?`<span class="bdg ${statusClass[ev.status]||'n'}">${ev.status}</span>`:'<span class="bdg b">노트</span>'}
+          <span class="stars">${'★'.repeat(Math.min(sc,5))}</span>
+        </div>
+        <h4>${r.summary_ko||r.company||'—'}</h4>
+      </div>`;
+    }).join('');
+
+    renderFeed(allFeed);
+  } catch(e) { console.error(e); }
+}
+
+function renderFeed(items) {
+  const statusClass = { '확정':'g', '전망':'a', '루머':'n' };
+  document.getElementById('feedList').innerHTML = items.slice(0,15).map(r => {
+    const date = new Date(r.created_at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'});
+    const ev = (r.events||[])[0];
+    const sc = r.importance_score||0;
+    const tags = (r.tags||[]).slice(0,3).map(t=>`<span class="t">${t}</span>`).join('');
+    return `<div class="feed-item">
+      <div class="top">
+        ${ev?`<span class="bdg ${statusClass[ev.status]||'n'}">${ev.status}</span>`:'<span class="bdg n">노트</span>'}
+        <span class="time">${date}</span>
+        <span class="star"><span class="stars">${'★'.repeat(Math.min(sc,5))}</span></span>
+      </div>
+      <h4>${r.summary_ko||r.company||'—'}</h4>
+      <div class="feed-tags">${tags}</div>
+    </div>`;
+  }).join('') || '<div style="color:var(--faint);font-size:13px;padding:20px 0">데이터가 없습니다</div>';
+}
+
+function filterFeed() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  if (!q) { renderFeed(allFeed); return; }
+  const filtered = allFeed.filter(r =>
+    (r.summary_ko||'').toLowerCase().includes(q) ||
+    (r.tags||[]).some(t=>t.toLowerCase().includes(q)) ||
+    (r.company||'').toLowerCase().includes(q)
+  );
+  renderFeed(filtered);
+}
+
+// ── Ask AI ──
+async function askPreset(q) {
+  document.getElementById('askInput').value = q;
+  askAI();
+}
+
+async function askAI() {
+  const q = document.getElementById('askInput').value.trim();
+  if (!q) return;
+  const context = allFeed.slice(0,20).map(r => r.summary_ko||r.company||'').join('\n');
+  const prompt = `다음은 블록미디어 취재노트 요약입니다:\n${context}\n\n질문: ${q}\n\n간결하게 bullet point로 답변하세요. JSON 없이 텍스트만.`;
+
+  document.getElementById('askLabel').style.display = 'block';
+  document.getElementById('askAns').innerHTML = '<li>분석 중...</li>';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/gemini-proxy`, {
+      method: 'POST', headers: H, body: JSON.stringify({ prompt })
+    });
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '답변 없음';
+    const lines = text.split('\n').filter(l=>l.trim()).slice(0,5);
+    document.getElementById('askAns').innerHTML = lines.map(l=>`<li>${l.replace(/^[-•*]\s*/,'')}</li>`).join('');
   } catch(e) {
-    alert('저장 실패: ' + e.message);
+    document.getElementById('askAns').innerHTML = `<li>오류: ${e.message}</li>`;
   }
 }
+
+// ── 프로 ──
+async function loadPro() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=*&order=importance_score.desc,created_at.desc&limit=50`, { headers: H });
+    const notes = await res.json();
+
+    // 규제 레이더 (regulation 관련)
+    const regNotes = notes.filter(r => (r.tags||[]).some(t=>['규제','법령','규정','정책','국회'].some(k=>t.includes(k))));
+    document.getElementById('radarList').innerHTML = regNotes.slice(0,4).map(r => {
+      const days = Math.floor((Date.now()-new Date(r.created_at))/86400000);
+      return `<div class="radar">
+        <div class="top"><h4>${r.summary_ko||'—'}</h4><span class="dday">D+${days}</span></div>
+        <div class="interp">${(r.follow_angles||[])[0]||''}</div>
+      </div>`;
+    }).join('') || '<div style="color:var(--faint);font-size:13px">규제 관련 노트가 없습니다</div>';
+
+    // 최상위 픽
+    const top = notes.filter(r=>r.importance_score>=4).slice(0,5);
+    document.getElementById('topPickList').innerHTML = top.map(r =>
+      `<div style="display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line2)">
+        <span class="stars">${'★'.repeat(r.importance_score||0)}</span>
+        <span style="font-size:13px;font-weight:600;flex:1">${r.summary_ko||'—'}</span>
+      </div>`
+    ).join('') || '<div style="color:var(--faint);font-size:12.5px;padding:10px 0">중요도 4점 이상 노트가 없습니다</div>';
+
+    // 워치리스트 (태그 집계)
+    const tagCount = {};
+    notes.forEach(r=>(r.tags||[]).forEach(t=>{ tagCount[t]=(tagCount[t]||0)+1; }));
+    const topTags = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    document.getElementById('watchList').innerHTML = topTags.map(([t,c])=>
+      `<div class="watch-row"><span class="wn">${t}</span><span class="wc">노트 ${c}건</span><div class="toggle"></div></div>`
+    ).join('') || '<div style="color:var(--faint);font-size:12.5px">없음</div>';
+
+  } catch(e) { console.error(e); }
+}
+
+// ── 초기 로드 ──
+loadQueue();
 </script>
 </body>
 </html>
