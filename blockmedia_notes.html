@@ -312,7 +312,6 @@
 // ══════════════════════════════════════════
 const SUPABASE_URL  = 'https://xiyojjywtcwiymibmszr.supabase.co';
 const SUPABASE_KEY  = 'sb_publishable_RQGUYA-vTnhk3uT1kr8zlA_zwlDbo8i';
-const GEMINI_KEY    = 'YOUR_GEMINI_API_KEY';
 // ══════════════════════════════════════════
 
 let currentSource = 'note';
@@ -355,7 +354,6 @@ function showToast(msg, duration = 2500) {
 async function runAnalysis() {
   const text = document.getElementById('memo').value.trim();
   if (!text) { alert('메모를 먼저 입력해주세요.'); return; }
-  if (GEMINI_KEY === 'YOUR_GEMINI_API_KEY') { alert('GEMINI_KEY를 설정해주세요.'); return; }
 
   setLoading(true);
   document.getElementById('emptyState').style.display = 'none';
@@ -380,14 +378,18 @@ ${text}`;
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      `${SUPABASE_URL}/functions/v1/gemini-proxy`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({ prompt })
       }
     );
-    if (!res.ok) throw new Error(`Gemini 오류 ${res.status}`);
+    if (!res.ok) throw new Error(`Edge Function 오류 ${res.status}`);
     const data = await res.json();
     const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const clean = raw.replace(/```json|```/g,'').trim();
