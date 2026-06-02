@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>블록미디어 취재노트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  /* ── 설정: 여기에 키 입력 ── */
+  /* SUPABASE_URL, SUPABASE_KEY, GEMINI_KEY 는 아래 script 블록에 있습니다 */
+
+  :root {
+    --bg:#F6F5F1; --card:#FFFFFF; --ink:#1A1A17; --muted:#6B6A63; --faint:#9C9A90;
+    --line:#E5E3DB; --line2:#EFEDE6;
+    --blue:#1F6FEB; --blue-bg:#E8F0FD; --blue-dark:#1458C0;
+    --green:#1B8A5A; --green-bg:#E3F3EB;
+    --amber:#B07A12; --amber-bg:#F7EED6;
+    --red:#C0392B; --red-bg:#FBE9E7;
+    --gray-bg:#ECEAE2; --gray-ink:#5F5E57;
+    --accent:#0F1A2E;
+  }
+  * { box-sizing:border-box; margin:0; padding:0 }
+  body { font-family:'Pretendard',-apple-system,sans-serif; background:var(--bg); color:var(--ink);
+    font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased }
+
+  /* ── 헤더 ── */
+  header { position:sticky; top:0; z-index:50; background:rgba(246,245,241,.92);
+    backdrop-filter:blur(10px); border-bottom:1px solid var(--line) }
+  .topbar { display:flex; align-items:center; gap:20px; height:58px; max-width:1160px; margin:0 auto; padding:0 24px }
+  .logo { font-weight:800; font-size:15px; letter-spacing:-.02em; color:var(--accent);
+    display:flex; align-items:center; gap:8px }
+  .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--blue) }
+  .logo small { font-weight:500; color:var(--faint); font-size:11px; padding-left:8px; border-left:1px solid var(--line) }
+  nav { display:flex; gap:3px; margin-left:auto }
+  .tab { padding:7px 14px; border-radius:8px; font-weight:600; font-size:13px; color:var(--muted);
+    cursor:pointer; border:none; background:none; font-family:inherit; transition:.15s; display:flex; align-items:center; gap:6px }
+  .tab:hover { background:var(--line2); color:var(--ink) }
+  .tab.on { background:var(--accent); color:#fff }
+  .tab .n { font-size:10px; opacity:.6; font-weight:700 }
+  .flowhint { font-size:12px; color:var(--faint); text-align:center; padding:9px 0;
+    border-top:1px solid var(--line2) }
+  .flowhint b { color:var(--blue); font-weight:600 }
+
+  /* ── 레이아웃 ── */
+  .wrap { max-width:1160px; margin:0 auto; padding:0 24px 80px }
+  .screen { display:none; padding:28px 0; animation:fadeup .3s ease }
+  .screen.on { display:block }
+  @keyframes fadeup { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px }
+  .layout { display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start }
+
+  .scr-title { font-size:20px; font-weight:800; letter-spacing:-.02em; margin-bottom:4px }
+  .scr-sub { font-size:13px; color:var(--muted); margin-bottom:22px }
+  .scr-sub b { color:var(--blue) }
+
+  /* ── 패널 ── */
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px }
+  .panel h3 { font-size:13px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:14px }
+  .panel h3 .ico { width:22px; height:22px; border-radius:6px; display:grid; place-items:center;
+    background:var(--blue-bg); color:var(--blue); font-size:13px; flex-shrink:0 }
+
+  .sec-h { font-size:11px; font-weight:700; color:var(--faint); text-transform:uppercase;
+    letter-spacing:.07em; margin-bottom:11px; display:flex; align-items:center; gap:7px }
+  .auto-pill { background:var(--blue-bg); color:var(--blue); font-size:10px; font-weight:700;
+    padding:2px 6px; border-radius:4px; text-transform:none; letter-spacing:0 }
+
+  /* ── 뱃지 ── */
+  .bdg { display:inline-flex; align-items:center; font-size:11px; font-weight:700; padding:2px 8px; border-radius:5px }
+  .bdg.g { background:var(--green-bg); color:var(--green) }
+  .bdg.a { background:var(--amber-bg); color:var(--amber) }
+  .bdg.b { background:var(--blue-bg); color:var(--blue) }
+  .bdg.n { background:var(--gray-bg); color:var(--gray-ink) }
+  .bdg.r { background:var(--red-bg); color:var(--red) }
+  .stars { color:#E0A82E; font-size:12px; letter-spacing:1px }
+
+  /* ── 입력 ── */
+  textarea { width:100%; height:200px; border:1px solid var(--line); border-radius:10px;
+    padding:13px; font-family:inherit; font-size:13.5px; line-height:1.65; resize:none;
+    color:var(--ink); background:#FCFBF8 }
+  textarea:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-bg) }
+
+  .source-row { display:flex; gap:8px; margin-bottom:12px }
+  .src-btn { flex:1; padding:8px; border:1px solid var(--line); border-radius:8px;
+    background:#FCFBF8; font-family:inherit; font-size:12.5px; font-weight:600; color:var(--muted);
+    cursor:pointer; transition:.15s; text-align:center }
+  .src-btn:hover { border-color:var(--blue); color:var(--blue) }
+  .src-btn.on { border-color:var(--blue); background:var(--blue-bg); color:var(--blue) }
+
+  .btn-primary { width:100%; margin-top:12px; padding:12px; border:none; border-radius:10px;
+    background:var(--accent); color:#fff; font-family:inherit; font-weight:700; font-size:14px;
+    cursor:pointer; transition:.15s; display:flex; align-items:center; justify-content:center; gap:8px }
+  .btn-primary:hover { opacity:.88 }
+  .btn-primary:disabled { opacity:.45; cursor:not-allowed }
+
+  .spin { width:14px; height:14px; border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff; border-radius:50%; animation:rot .65s linear infinite; display:none }
+  @keyframes rot { to { transform:rotate(360deg) } }
+
+  /* ── 결과 ── */
+  .empty { display:grid; place-items:center; min-height:240px; text-align:center; color:var(--faint) }
+  .empty .big { font-size:28px; margin-bottom:8px; opacity:.4 }
+  .out { display:none }
+  .out.show { display:block; animation:fadeup .4s ease }
+
+  .ex-sec { margin-bottom:16px }
+  .ex-lbl { font-size:10.5px; font-weight:700; color:var(--faint); text-transform:uppercase;
+    letter-spacing:.06em; margin-bottom:8px }
+  .chips { display:flex; flex-wrap:wrap; gap:6px }
+  .chip { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:8px;
+    border:1px solid var(--line); background:#FCFBF8; font-size:12.5px; font-weight:600 }
+  .chip .k { font-size:10px; color:var(--faint); font-weight:700 }
+
+  .ev-row { border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin-bottom:7px }
+  .ev-row .top { display:flex; align-items:center; gap:7px; margin-bottom:4px; flex-wrap:wrap }
+  .ev-row .ttl { font-weight:700; font-size:13px; flex:1 }
+  .ev-row .meta { font-size:11.5px; color:var(--muted) }
+
+  .fanout { margin-top:15px; border-top:1px dashed var(--line); padding-top:14px }
+  .fan-list { display:flex; flex-direction:column; gap:7px }
+  .fan-item { display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:9px;
+    background:var(--blue-bg); font-size:13px; font-weight:600; color:var(--accent);
+    cursor:pointer; border:1px solid transparent; transition:.15s }
+  .fan-item:hover { border-color:var(--blue) }
+  .fan-item .arrow { margin-left:auto; color:var(--blue) }
+
+  .save-btn { width:100%; margin-top:14px; padding:11px; border:none; border-radius:10px;
+    background:var(--green); color:#fff; font-family:inherit; font-weight:700; font-size:14px;
+    cursor:pointer; transition:.15s; display:none }
+  .save-btn:hover { opacity:.88 }
+  .save-btn.show { display:block; animation:fadeup .3s ease }
+
+  /* ── 취재 큐 ── */
+  .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:22px }
+  .metric { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 16px }
+  .metric .lbl { font-size:12px; color:var(--muted); font-weight:600; margin-bottom:8px }
+  .metric .num { font-size:28px; font-weight:800; letter-spacing:-.02em }
+  .metric.alert .num { color:var(--red) }
+
+  .track-row { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:.15s }
+  .track-row:hover { border-color:var(--blue) }
+  .track-row.stale { border-left:3px solid var(--red) }
+  .track-row .top { display:flex; align-items:center; gap:9px; margin-bottom:8px; flex-wrap:wrap }
+  .track-row h4 { font-size:14px; font-weight:700; letter-spacing:-.01em; flex:1 }
+  .prio { font-size:11px; font-weight:700; padding:2px 8px; border-radius:5px; white-space:nowrap }
+  .prio.hi { background:var(--red-bg); color:var(--red) }
+  .prio.mid { background:var(--amber-bg); color:var(--amber) }
+  .track-meta { display:flex; align-items:center; gap:12px; font-size:12px; color:var(--muted) }
+  .stale-tag { color:var(--red); font-weight:700; margin-left:auto; white-space:nowrap }
+
+  /* 댓글 */
+  .cmt-toggle { margin-top:10px; font-size:12px; color:var(--blue); font-weight:600;
+    display:inline-flex; align-items:center; gap:5px; cursor:pointer }
+  .comments { display:none; margin-top:12px; padding-top:12px; border-top:1px solid var(--line2) }
+  .track-row.open .comments { display:block }
+  .cmt { margin-bottom:10px }
+  .cmt-head { display:flex; align-items:center; gap:8px; margin-bottom:2px }
+  .cmt-name { font-size:12px; font-weight:700 }
+  .cmt-date { font-size:11px; color:var(--faint) }
+  .cmt-body { font-size:13px; color:var(--ink); line-height:1.55 }
+  .cmt-input { display:flex; gap:7px; margin-top:11px }
+  .cmt-input input { flex:1; border:1px solid var(--line); border-radius:8px; padding:8px 11px;
+    font-family:inherit; font-size:13px; background:#FCFBF8; color:var(--ink) }
+  .cmt-input input:focus { outline:none; border-color:var(--blue) }
+  .cmt-input button { border:none; background:var(--accent); color:#fff; border-radius:8px;
+    padding:0 14px; font-family:inherit; font-weight:700; font-size:13px; cursor:pointer }
+
+  /* 사이드 패널 */
+  .live-row { display:flex; gap:9px; padding:9px 0; border-bottom:1px solid var(--line2) }
+  .live-row:last-child { border:none; padding-bottom:0 }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); margin-top:5px; flex-shrink:0 }
+  .live-dot.gray { background:var(--faint) }
+  .live-row .txt { font-size:12.5px; line-height:1.45 }
+  .live-row .t { font-size:11px; color:var(--faint); margin-top:2px }
+
+  /* 토스트 */
+  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--accent); color:#fff; padding:11px 22px; border-radius:10px;
+    font-weight:600; font-size:13.5px; opacity:0; transition:.3s; pointer-events:none; z-index:999 }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0) }
+
+  @media(max-width:860px) {
+    .grid2, .layout, .metrics { grid-template-columns:1fr 1fr }
+  }
+  @media(max-width:560px) {
+    .grid2, .layout, .metrics { grid-template-columns:1fr }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      블록미디어 인텔리전스
+      <small>취재노트 DB · 내부용</small>
+    </div>
+    <nav>
+      <button class="tab on" data-s="input"><span class="n">1</span> 입력 · 취재관리</button>
+      <button class="tab" data-s="queue"><span class="n">2</span> 팔로업 큐</button>
+    </nav>
+  </div>
+  <div class="flowhint">핵심 흐름 &nbsp;·&nbsp; 메모 한 번 입력 → <b>AI 자동 구조화</b> → Supabase 저장 → 취재 큐 반영</div>
+</header>
+
+<!-- ══════════════ SCREEN 1: 입력 ══════════════ -->
+<div class="screen on" id="input">
+<div class="wrap">
+  <div class="scr-title">입력 · 취재 관리</div>
+  <div class="scr-sub">메모를 붙여넣으면 <b>Gemini가 자동 구조화</b>하고 Supabase에 저장됩니다.</div>
+
+  <div class="grid2">
+    <!-- 왼쪽: 입력 -->
+    <div class="panel">
+      <h3><span class="ico">✎</span> 취재 메모</h3>
+
+      <div class="source-row">
+        <button class="src-btn on" onclick="setSource('note', this)">✏️ 직접 취재 메모</button>
+        <button class="src-btn" onclick="setSource('press', this)">📨 보도자료 (press_structured 연동)</button>
+      </div>
+
+      <textarea id="memo" placeholder="포스트잇처럼 자유롭게 메모하세요.
+예) [2026-05-26 단독] 하나금융과 Circle이 USDC MoU 체결.
+일본 EPI 시행(6/1)을 계기로 한국 진입 시나리오 부상.
+51% 룰 통과 시 Circle이 핵심 파트너될 것으로 업계 관측."></textarea>
+
+      <button class="btn-primary" id="runBtn" onclick="runAnalysis()">
+        <div class="spin" id="spin"></div>
+        <span id="btnTxt">✦ Gemini로 구조화하기</span>
+      </button>
+    </div>
+
+    <!-- 오른쪽: 결과 -->
+    <div class="panel">
+      <h3><span class="ico">⚡</span> AI 자동 추출 결과</h3>
+
+      <div class="empty" id="emptyState">
+        <div>
+          <div class="big">⌁</div>
+          <div style="font-size:13px">왼쪽에 메모를 붙여넣고<br>'구조화하기'를 눌러보세요</div>
+        </div>
+      </div>
+
+      <div class="out" id="outState">
+        <div class="ex-sec">
+          <div class="ex-lbl">추출된 엔티티</div>
+          <div class="chips" id="entityChips"></div>
+        </div>
+
+        <div class="ex-sec">
+          <div class="ex-lbl">추출된 이벤트</div>
+          <div id="eventList"></div>
+        </div>
+
+        <div class="ex-sec">
+          <div class="ex-lbl">자동 태그</div>
+          <div class="chips" id="tagChips"></div>
+        </div>
+
+        <div class="ex-sec">
+          <div class="ex-lbl">중요도</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="stars" id="importanceStars"></span>
+            <span style="font-size:13px;color:var(--muted)" id="importanceReason"></span>
+          </div>
+        </div>
+
+        <div class="fanout">
+          <div class="ex-lbl" style="color:var(--blue)">파생 취재 각도</div>
+          <div class="fan-list" id="fanList"></div>
+        </div>
+
+        <button class="save-btn" id="saveBtn" onclick="saveToSupabase()">
+          💾 Supabase에 저장하기
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ SCREEN 2: 팔로업 큐 ══════════════ -->
+<div class="screen" id="queue">
+<div class="wrap">
+  <div class="scr-title">팔로업 큐</div>
+  <div class="scr-sub">저장된 취재노트가 상태·중요도순으로 쌓입니다. <b>클릭하면 메모 스레드</b>를 추가할 수 있어요.</div>
+
+  <div class="metrics">
+    <div class="metric"><div class="lbl">🔵 취재 진행중</div><div class="num" id="cnt-following">—</div></div>
+    <div class="metric"><div class="lbl">📥 인박스</div><div class="num" id="cnt-inbox">—</div></div>
+    <div class="metric alert"><div class="lbl">🔴 팔로업 필요</div><div class="num" id="cnt-stale">—</div></div>
+    <div class="metric"><div class="lbl">✓ 완료</div><div class="num" id="cnt-done">—</div></div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="sec-h">전체 노트 <span class="auto-pill">최신순</span></div>
+      <div id="queueList">
+        <div style="color:var(--faint);font-size:13px;padding:20px 0">로딩 중...</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <div class="sec-h" style="margin-bottom:13px">최근 저장 <span class="auto-pill">실시간</span></div>
+        <div id="recentList">
+          <div style="color:var(--faint);font-size:12.5px">저장된 노트가 없습니다</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  🔑 키 설정 — 여기에 직접 입력하세요
+// ══════════════════════════════════════════
+const SUPABASE_URL  = 'https://xiyojjywtcwiymibmszr.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_RQGUYA-vTnhk3uT1kr8zlA_zwlDbo8i';
+const GEMINI_KEY    = 'AIzaSyAnhNpCaGKeJrhortSzeAzQ29av9K_LeYg';  // ← Gemini 키만 여기 넣으세요
+// ══════════════════════════════════════════
+
+let currentSource = 'note';
+let currentResult = null;
+
+// 탭 전환
+const tabs    = [...document.querySelectorAll('.tab')];
+const screens = [...document.querySelectorAll('.screen')];
+function go(id) {
+  tabs.forEach(t => t.classList.toggle('on', t.dataset.s === id));
+  screens.forEach(s => s.classList.toggle('on', s.id === id));
+  if (id === 'queue') loadQueue();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+tabs.forEach(t => t.onclick = () => go(t.dataset.s));
+
+// 소스 선택
+function setSource(type, el) {
+  currentSource = type;
+  document.querySelectorAll('.src-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// 로딩 상태
+function setLoading(on) {
+  document.getElementById('runBtn').disabled = on;
+  document.getElementById('spin').style.display = on ? 'block' : 'none';
+  document.getElementById('btnTxt').textContent = on ? 'Gemini 분석 중...' : '✦ Gemini로 구조화하기';
+}
+
+// 토스트
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Gemini 호출 ──
+async function runAnalysis() {
+  const text = document.getElementById('memo').value.trim();
+  if (!text) { alert('메모를 먼저 입력해주세요.'); return; }
+  if (GEMINI_KEY === 'AIzaSyAnhNpCaGKeJrhortSzeAzQ29av9K_LeYg') { alert('GEMINI_KEY를 설정해주세요.'); return; }
+
+  setLoading(true);
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('outState').classList.remove('show');
+  document.getElementById('saveBtn').classList.remove('show');
+  currentResult = null;
+
+  const prompt = `다음 취재 메모를 분석해 JSON만 반환하세요. 마크다운 없이 순수 JSON만.
+
+{
+  "entities": [{"type":"조직|인물|토큰|법령","name":"이름"}],
+  "events": [{"status":"확정|전망|루머","title":"이벤트 제목","date":"날짜(없으면 null)","reliability":1~5}],
+  "tags": ["태그1","태그2"],
+  "summary_ko": "2문장 이내 요약",
+  "importance_score": 1~5,
+  "importance_reason": "판단 근거 한 줄",
+  "follow_angles": ["파생 취재 각도1","파생 취재 각도2","파생 취재 각도3"]
+}
+
+메모:
+${text}`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+      }
+    );
+    if (!res.ok) throw new Error(`Gemini 오류 ${res.status}`);
+    const data = await res.json();
+    const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    currentResult = JSON.parse(clean);
+    renderResult(currentResult);
+  } catch(e) {
+    alert('분석 실패: ' + e.message);
+    document.getElementById('emptyState').style.display = 'grid';
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── 결과 렌더링 ──
+function renderResult(d) {
+  // 엔티티
+  document.getElementById('entityChips').innerHTML =
+    (d.entities||[]).map(e =>
+      `<span class="chip"><span class="k">${e.type}</span>${e.name}</span>`
+    ).join('');
+
+  // 이벤트
+  const statusClass = { '확정':'g', '전망':'a', '루머':'n' };
+  document.getElementById('eventList').innerHTML =
+    (d.events||[]).map(ev => `
+      <div class="ev-row">
+        <div class="top">
+          <span class="bdg ${statusClass[ev.status]||'n'}">${ev.status}</span>
+          <span class="ttl">${ev.title}</span>
+        </div>
+        <div class="meta">${ev.date||'날짜 미상'} · 신뢰도 ${'★'.repeat(ev.reliability||3)}${'☆'.repeat(5-(ev.reliability||3))}</div>
+      </div>`
+    ).join('');
+
+  // 태그
+  document.getElementById('tagChips').innerHTML =
+    (d.tags||[]).map(t => `<span class="chip">${t}</span>`).join('');
+
+  // 중요도
+  const sc = Math.min(5, Math.max(1, d.importance_score||3));
+  document.getElementById('importanceStars').textContent = '★'.repeat(sc) + '☆'.repeat(5-sc);
+  document.getElementById('importanceReason').textContent = d.importance_reason||'';
+
+  // 파생 취재 각도
+  const icons = ['📰','🔍','📊'];
+  document.getElementById('fanList').innerHTML =
+    (d.follow_angles||[]).map((a,i) => `
+      <div class="fan-item">
+        <span>${icons[i%3]}</span>
+        <span>${a}</span>
+        <span class="arrow">→</span>
+      </div>`
+    ).join('');
+
+  document.getElementById('outState').classList.add('show');
+  document.getElementById('saveBtn').classList.add('show');
+}
+
+// ── Supabase 저장 ──
+async function saveToSupabase() {
+  if (!currentResult) return;
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') { alert('SUPABASE_URL을 설정해주세요.'); return; }
+
+  const content = document.getElementById('memo').value.trim();
+  const payload = {
+    content,
+    source_type:      currentSource,
+    entities:         currentResult.entities || [],
+    events:           currentResult.events || [],
+    tags:             currentResult.tags || [],
+    summary_ko:       currentResult.summary_ko || '',
+    importance_score: currentResult.importance_score || 3,
+    follow_angles:    currentResult.follow_angles || [],
+    status:           'inbox',
+    notes_thread:     []
+  };
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/press_notes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':        SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer':        'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    showToast('✓ Supabase에 저장되었습니다');
+    document.getElementById('memo').value = '';
+    document.getElementById('outState').classList.remove('show');
+    document.getElementById('saveBtn').classList.remove('show');
+    document.getElementById('emptyState').style.display = 'grid';
+    currentResult = null;
+  } catch(e) {
+    alert('저장 실패: ' + e.message);
+  }
+}
+
+// ── 큐 로드 ──
+async function loadQueue() {
+  const h = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+
+  try {
+    // 두 테이블 병렬 호출
+    const [notesRes, pressRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/press_notes?select=*&order=created_at.desc&limit=50`, { headers: h }),
+      fetch(`${SUPABASE_URL}/rest/v1/press_structured?select=*&order=parsed_at.desc&limit=50`, { headers: h })
+    ]);
+    const notes = await notesRes.json();
+    const press = await pressRes.json();
+
+    // press_structured → 통일 포맷으로 변환
+    const pressNorm = press.map(p => ({
+      id:              p.id,
+      _table:          'press',
+      created_at:      p.parsed_at,
+      summary_ko:      p.summary_ko || p.title,
+      source_type:     'press',
+      status:          'inbox',
+      importance_score: p.importance_score || 0,
+      tags:            Array.isArray(p.keywords) ? p.keywords : (p.keywords ? Object.values(p.keywords) : []),
+      company:         p.company,
+      category:        p.category,
+      notes_thread:    []
+    }));
+
+    // press_notes → 통일 포맷
+    const notesNorm = notes.map(n => ({ ...n, _table: 'note' }));
+
+    // 합치고 날짜순 정렬
+    const all = [...notesNorm, ...pressNorm].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    // 카운트 (press_notes 기준)
+    const counts = { inbox:0, following:0, stale:0, done:0 };
+    notesNorm.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    document.getElementById('cnt-inbox').textContent      = counts.inbox;
+    document.getElementById('cnt-following').textContent  = counts.following;
+    document.getElementById('cnt-stale').textContent      = counts.stale;
+    document.getElementById('cnt-done').textContent       = counts.done;
+
+    const statusLabel = { inbox:'인박스', following:'취재중', stale:'팔로업 필요', done:'완료' };
+    const statusClass = { inbox:'b', following:'b', stale:'r', done:'n' };
+    const prioClass   = s => s >= 4 ? 'hi' : s >= 3 ? 'mid' : '';
+
+    document.getElementById('queueList').innerHTML = all.length === 0
+      ? '<div style="color:var(--faint);font-size:13px;padding:16px 0">데이터가 없습니다.</div>'
+      : all.map(r => {
+          const date = new Date(r.created_at).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric',hour:'numeric',minute:'numeric'});
+          const tags = (r.tags||[]).slice(0,3).map(t=>`<span class="chip" style="font-size:11px">${t}</span>`).join('');
+          const isNote = r._table === 'note';
+          const isStale = r.status === 'stale';
+          const srcLabel = isNote ? '✏️ 직접취재' : '📨 보도자료';
+          const srcColor = isNote ? 'var(--green-bg)' : 'var(--blue-bg)';
+          const srcInk   = isNote ? 'var(--green)' : 'var(--blue)';
+          const title    = r.summary_ko || (r.content ? r.content.slice(0,60)+'...' : r.company || '—');
+
+          // 보도자료는 댓글 없음, 취재노트만 댓글 가능
+          const commentSection = isNote ? `
+              <div class="cmt-toggle">💬 메모 추가 <span style="font-size:10px">▾</span></div>
+              <div class="comments">
+                <div class="cmt-input">
+                  <input type="text" placeholder="팔로업 메모..." onkeydown="if(event.key==='Enter')addComment(this,'${r.id}')">
+                  <button onclick="addComment(this.previousElementSibling,'${r.id}')">추가</button>
+                </div>
+                <div class="cmt-list" id="cmt-${r.id}">
+                  ${(r.notes_thread||[]).map(c=>`
+                    <div class="cmt">
+                      <div class="cmt-head"><span class="cmt-name">${c.author||'나'}</span><span class="cmt-date">${c.date||''}</span></div>
+                      <div class="cmt-body">${c.text}</div>
+                    </div>`).join('')}
+                </div>
+              </div>` : '';
+
+          return `
+            <div class="track-row ${isStale?'stale':''}" onclick="toggleComment(this)">
+              <div class="top">
+                <span class="bdg ${statusClass[r.status]||'n'}">${isNote ? (statusLabel[r.status]||r.status) : (r.category||'보도자료')}</span>
+                <h4>${title}</h4>
+                ${r.importance_score >= 3 ? `<span class="prio ${prioClass(r.importance_score)}">${'★'.repeat(r.importance_score)}</span>` : ''}
+              </div>
+              <div class="track-meta">
+                <span style="font-size:11px;background:${srcColor};color:${srcInk};padding:2px 7px;border-radius:5px;font-weight:600">${srcLabel}</span>
+                ${r.company ? `<span style="font-size:12px;font-weight:600">${r.company}</span>` : ''}
+                <span style="display:flex;gap:5px">${tags}</span>
+                <span style="margin-left:auto;font-size:11.5px;color:var(--faint)">${date}</span>
+              </div>
+              ${commentSection}
+            </div>`;
+        }).join('');
+
+    // 최근 저장 (사이드 — 취재노트만)
+    document.getElementById('recentList').innerHTML = notesNorm.slice(0,5).length === 0
+      ? '<div style="color:var(--faint);font-size:12.5px">저장된 노트가 없습니다</div>'
+      : notesNorm.slice(0,5).map(r => {
+          const t = new Date(r.created_at).toLocaleTimeString('ko-KR',{hour:'numeric',minute:'numeric'});
+          return `
+            <div class="live-row">
+              <div class="live-dot"></div>
+              <div>
+                <div class="txt">${r.summary_ko || r.content?.slice(0,40)+'...'}</div>
+                <div class="t">${t} · 직접취재</div>
+              </div>
+            </div>`;
+        }).join('');
+
+  } catch(e) {
+    document.getElementById('queueList').innerHTML =
+      `<div style="color:var(--red);font-size:13px;padding:16px 0">로드 실패: ${e.message}</div>`;
+  }
+}
+
+// 댓글 토글
+function toggleComment(el) {
+  el.classList.toggle('open');
+}
+
+// 댓글 추가
+async function addComment(input, noteId) {
+  const text = input.value.trim();
+  if (!text) return;
+
+  const now = new Date();
+  const date = `${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const newComment = { author:'나', text, date };
+
+  try {
+    // 기존 thread 가져오기
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/press_notes?id=eq.${noteId}&select=notes_thread`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const rows = await res.json();
+    const thread = [...(rows[0]?.notes_thread || []), newComment];
+
+    // 업데이트
+    await fetch(`${SUPABASE_URL}/rest/v1/press_notes?id=eq.${noteId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':        SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ notes_thread: thread })
+    });
+
+    // UI 업데이트
+    const cmt = document.createElement('div');
+    cmt.className = 'cmt';
+    cmt.innerHTML = `<div class="cmt-head"><span class="cmt-name">${newComment.author}</span><span class="cmt-date">${date}</span></div><div class="cmt-body">${text}</div>`;
+    document.getElementById(`cmt-${noteId}`).appendChild(cmt);
+    input.value = '';
+    showToast('✓ 메모 추가됨');
+  } catch(e) {
+    alert('저장 실패: ' + e.message);
+  }
+}
+</script>
+</body>
+</html>
