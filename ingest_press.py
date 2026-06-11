@@ -49,7 +49,7 @@ def parse_with_gemini(subject, body, attachments_text):
     for attempt in range(3):
         try:
             response = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-3-flash",
                 contents=f"""다음 보도자료를 분석해서 JSON으로만 응답하세요. 다른 텍스트 없이 JSON만.
 
 {{
