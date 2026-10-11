@@ -13,6 +13,24 @@ headers = {
     "Content-Type": "application/json"
 }
 
+def sanitize_for_postgres(value, path="row"):
+    """Remove only actual NUL characters from outgoing database values."""
+    if isinstance(value, str):
+        count = value.count("\x00")
+        if count:
+            if path in ("raw.message_id", "raw.received_at"):
+                raise ValueError(f"NUL in identity/timestamp field: {path}")
+            print(f"Removed {count} NUL character(s) at {path}")
+            return value.replace("\x00", "")
+        return value
+    if isinstance(value, list):
+        return [sanitize_for_postgres(item, f"{path}[{i}]")
+                for i, item in enumerate(value)]
+    if isinstance(value, dict):
+        return {key: sanitize_for_postgres(item, f"{path}.{key}")
+                for key, item in value.items()}
+    return value
+
 def extract_pdf(data: bytes) -> str:
     from pdfminer.high_level import extract_text_to_fp
     from pdfminer.layout import LAParams
@@ -101,7 +119,7 @@ with httpx.Client() as client:
     res = client.post(
         f"{SUPABASE_URL}/rest/v1/press_raw",
         headers={**headers, "Prefer": "return=representation,resolution=ignore-duplicates"},
-        json=raw_row
+        json=sanitize_for_postgres(raw_row, "raw")
     )
     if res.status_code not in (200, 201):
         if "duplicate" in res.text.lower():
@@ -124,6 +142,7 @@ with httpx.Client() as client:
     res = client.post(
         f"{SUPABASE_URL}/rest/v1/press_structured",
         headers=headers,
-        json=parsed
+        json=sanitize_for_postgres(parsed, "structured")
     )
     print(f"Structured saved: {res.status_code}")
+
