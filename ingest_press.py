@@ -94,6 +94,7 @@ def parse_with_gemini(subject, body, attachments_text):
                 raise Exception("Gemini returned empty response")
             return json.loads(raw_text)
         except Exception as e:
+            # 크레딧 소진(402)은 재시도해도 소용없으므로 즉시 중단
             if "RESOURCE_EXHAUSTED" in str(e) or "402" in str(e):
                 raise
             if attempt < 2:
@@ -102,7 +103,7 @@ def parse_with_gemini(subject, body, attachments_text):
                 time.sleep(wait)
             else:
                 raise
-                
+
 # 메인 실행
 processed_atts = process_attachments(payload.get("attachments", []))
 atts_text = "\n\n".join(a["extractedText"] for a in processed_atts)
@@ -121,12 +122,10 @@ with httpx.Client() as client:
     res = client.post(
         f"{SUPABASE_URL}/rest/v1/press_raw",
         headers={**headers, "Prefer": "return=representation,resolution=ignore-duplicates"},
+        params={"on_conflict": "message_id"},
         json=sanitize_for_postgres(raw_row, "raw")
     )
     if res.status_code not in (200, 201):
-        if "duplicate" in res.text.lower():
-            print("Skipped: duplicate message_id")
-            exit(0)
         raise Exception(f"Supabase raw insert failed: {res.text}")
 
     rows = res.json()
@@ -134,16 +133,18 @@ with httpx.Client() as client:
         raw_id = rows[0]["id"]
         print(f"Raw saved: {raw_id}")
     else:
+        # 중복: 이미 저장된 raw 조회 → structured 없으면 이어서 처리
         q = client.get(f"{SUPABASE_URL}/rest/v1/press_raw", headers=headers,
                        params={"message_id": f"eq.{payload['messageId']}", "select": "id"})
+        q.raise_for_status()
         raw_id = q.json()[0]["id"]
         s = client.get(f"{SUPABASE_URL}/rest/v1/press_structured", headers=headers,
                        params={"raw_id": f"eq.{raw_id}", "select": "raw_id"})
+        s.raise_for_status()
         if s.json():
             print("Skipped: already structured")
             exit(0)
         print(f"Resuming raw: {raw_id}")
-        
 
 # 2. Gemini 파싱 + structured 저장
 parsed = parse_with_gemini(payload["subject"], payload.get("bodyPlain", ""), atts_text)
@@ -156,4 +157,4 @@ with httpx.Client() as client:
         json=sanitize_for_postgres(parsed, "structured")
     )
     print(f"Structured saved: {res.status_code}")
-
+    res.raise_for_status()
