@@ -94,6 +94,8 @@ def parse_with_gemini(subject, body, attachments_text):
                 raise Exception("Gemini returned empty response")
             return json.loads(raw_text)
         except Exception as e:
+            if "RESOURCE_EXHAUSTED" in str(e) or "402" in str(e):
+                raise
             if attempt < 2:
                 wait = (attempt + 1) * 10
                 print(f"Retry {attempt+1}, waiting {wait}s... ({e})")
@@ -128,11 +130,20 @@ with httpx.Client() as client:
         raise Exception(f"Supabase raw insert failed: {res.text}")
 
     rows = res.json()
-    if not rows:
-        print("Skipped: duplicate message_id")
-        exit(0)
-    raw_id = rows[0]["id"]
-    print(f"Raw saved: {raw_id}")
+    if rows:
+        raw_id = rows[0]["id"]
+        print(f"Raw saved: {raw_id}")
+    else:
+        q = client.get(f"{SUPABASE_URL}/rest/v1/press_raw", headers=headers,
+                       params={"message_id": f"eq.{payload['messageId']}", "select": "id"})
+        raw_id = q.json()[0]["id"]
+        s = client.get(f"{SUPABASE_URL}/rest/v1/press_structured", headers=headers,
+                       params={"raw_id": f"eq.{raw_id}", "select": "raw_id"})
+        if s.json():
+            print("Skipped: already structured")
+            exit(0)
+        print(f"Resuming raw: {raw_id}")
+        
 
 # 2. Gemini 파싱 + structured 저장
 parsed = parse_with_gemini(payload["subject"], payload.get("bodyPlain", ""), atts_text)
